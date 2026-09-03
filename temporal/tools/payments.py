@@ -8,7 +8,7 @@ logger = logging.getLogger("temporal.tools.payments")
 async def execute_message_payments_team(order_id: str, message: str, action_required: str = "review_charge") -> dict[str, Any]:
     """Simulates sending a payment dispute or reconciliation request to finance/payments."""
     timestamp = datetime.now(timezone.utc).isoformat()
-    logger.info(f"💳 [TOOL: message_payments_team] Order: {order_id} | Action: {action_required} | Message: {message}")
+    logger.info(f"[TOOL: message_payments_team] Order: {order_id} | Action: {action_required} | Message: {message}")
 
     return {
         "tool": "message_payments_team",

@@ -63,7 +63,7 @@ async def update_compact_memory_activity(input_data: dict[str, Any]) -> dict[str
     updated_memory = memory.model_dump(mode="json")
 
     print(
-        f"  🧠 [MEMORY UPDATE] Order: {memory.order_id} | "
+        f"  [MEMORY UPDATE] Order: {memory.order_id} | "
         f"Status: {memory.current_status} | "
         f"Payment: {memory.payment_status} | "
         f"Shipment: {memory.shipment_status} | "

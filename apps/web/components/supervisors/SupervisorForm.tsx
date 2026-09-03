@@ -132,12 +132,12 @@ export function SupervisorForm({
         wake_sensitivity: sensitivity,
         model_name: modelName,
       });
-      setMsg("✓ Supervisor profile saved successfully!");
+      setMsg("Supervisor profile saved successfully.");
       setName("");
       setDescription("");
       if (onCreated) onCreated();
     } catch (err: any) {
-      setMsg(`❌ Error: ${err.message}`);
+      setMsg(`Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -200,7 +200,7 @@ export function SupervisorForm({
             <label className="block text-[11px] font-semibold text-white">Supervisor Profile Name</label>
             {isDuplicate && (
               <span className="text-[10px] text-amber-400 font-mono font-medium">
-                ⚠️ A profile named &quot;{name.trim()}&quot; already exists
+                A profile named &quot;{name.trim()}&quot; already exists
               </span>
             )}
           </div>

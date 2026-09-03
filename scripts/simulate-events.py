@@ -75,7 +75,7 @@ async def run_automated_simulation(client: httpx.AsyncClient, run_id: str, inter
             activities = run_data.get("activities", [])
             if activities:
                 latest_act = activities[-1]
-                console.print("  [bold cyan]🤖 AI Agent Reaction:[/bold cyan]")
+                console.print("  [bold cyan][AI AGENT REACTION][/bold cyan]")
                 console.print(f"     Reasoning: [italic]{latest_act.get('reasoning')}[/italic]")
                 for a in latest_act.get("result", {}).get("actions_executed", []):
                     console.print(f"     Tool Called: [bold green]{a.get('tool')}[/bold green] -> {a.get('summary')}")
@@ -84,7 +84,7 @@ async def run_automated_simulation(client: httpx.AsyncClient, run_id: str, inter
 
         # Countdown to next event if not final
         if idx < len(AUTOMATED_SCENARIO):
-            console.print(f"\n[bold magenta]⏳ Waiting {interval} seconds before next event (Agent dormant/sleeping in zero-cost state)...[/bold magenta]")
+            console.print(f"\n[bold magenta][PAUSE] Waiting {interval} seconds before next event (Agent dormant/sleeping in zero-cost state)...[/bold magenta]")
             for remaining in range(interval, 0, -1):
                 sys.stdout.write(f"\r   Next event in {remaining}s... (Press Ctrl+C to stop) ")
                 sys.stdout.flush()
@@ -92,7 +92,7 @@ async def run_automated_simulation(client: httpx.AsyncClient, run_id: str, inter
             sys.stdout.write("\r" + " " * 60 + "\r")
             sys.stdout.flush()
 
-    console.print("\n[bold green]✅ Full Order Lifecycle Automated Simulation Completed Successfully![/bold green]\n")
+    console.print("\n[bold green][OK] Full Order Lifecycle Automated Simulation Completed Successfully.[/bold green]\n")
 
 
 async def main():
@@ -110,7 +110,7 @@ async def main():
         try:
             await client.get("/health")
         except Exception:
-            console.print("[bold red]❌ Cannot connect to FastAPI backend at http://localhost:8000[/bold red]")
+            console.print("[bold red][ERROR] Cannot connect to FastAPI backend at http://localhost:8000[/bold red]")
             return
 
         run_id = args.run_id

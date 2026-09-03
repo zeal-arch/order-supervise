@@ -53,7 +53,7 @@ async def persist_activity_log_activity(input_data: dict[str, Any]) -> dict[str,
             )
             db.add(db_activity)
             await db.commit()
-            logger.info(f"💾 [PERSIST_ACTIVITY] Saved {activity_type} for run {run.id}")
+            logger.info(f"[PERSIST_ACTIVITY] Saved {activity_type} for run {run.id}")
 
     try:
         await execute_with_db_retry(_operation)
@@ -95,7 +95,7 @@ async def persist_run_state_activity(input_data: dict[str, Any]) -> dict[str, An
             run.updated_at = datetime.now(timezone.utc)
             db.add(run)
             await db.commit()
-            logger.info(f"💾 [PERSIST_STATE] Updated state for run {run.id} (Status: {status})")
+            logger.info(f"[PERSIST_STATE] Updated state for run {run.id} (Status: {status})")
 
     try:
         await execute_with_db_retry(_operation)

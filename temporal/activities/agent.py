@@ -426,7 +426,7 @@ async def execute_agent_step_activity(input_data: dict[str, Any]) -> dict[str, A
 
     # Print professional structured execution block in terminal
     print("\n" + "=" * 76)
-    print(f"  🤖 AI AGENT STEP | Order: {order_id} | Trigger: {wake_reason}")
+    print(f"  [AGENT STEP] Order: {order_id} | Trigger: {wake_reason}")
     print("-" * 76)
     print(f"  Reasoning:\n    {full_reasoning}\n")
     if executed_action_results:

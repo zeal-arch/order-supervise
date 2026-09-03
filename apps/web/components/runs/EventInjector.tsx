@@ -15,9 +15,6 @@ import {
   Play,
   Pause,
   FastForward,
-  Sparkles,
-  Wrench,
-  Zap,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DomainEvent } from "@/lib/types";
@@ -375,7 +372,7 @@ export function EventInjector({
             <span
               className={`text-[10px] px-2 py-0.5 rounded-[4px] font-mono font-bold uppercase tracking-wider ${
                 isAutoplayRunning
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : "bg-white/10 text-white border border-white/20"
               }`}
             >
@@ -391,7 +388,6 @@ export function EventInjector({
               className="px-2.5 py-1 rounded-[6px] bg-[#141414] hover:bg-[#282828] text-white text-xs font-semibold border border-[#3a3a3a] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
               title="Pause automation and switch to manual verification"
             >
-              <Wrench className="w-3 h-3 text-amber-400" />
               <span>Manual</span>
             </button>
           ) : (
@@ -399,10 +395,9 @@ export function EventInjector({
               type="button"
               onClick={resumeAutopilot}
               disabled={!nextAutoplayPreset}
-              className="px-2.5 py-1 rounded-[6px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+              className="px-2.5 py-1 rounded-[6px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
               title="Resume automatic 30s event progression"
             >
-              <Zap className="w-3 h-3 text-amber-400" />
               <span>Autoplay (30s)</span>
             </button>
           )}
@@ -418,9 +413,8 @@ export function EventInjector({
       <div className="p-3 rounded-[10px] bg-[#161616] border border-[#303030] space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
             <span className="text-xs font-semibold text-white">
-              {isAutoplayRunning ? "Autopilot Active (Lifecycle Simulation)" : "Autopilot Paused"}
+              {isAutoplayRunning ? "Autopilot Active" : "Autopilot Paused"}
             </span>
           </div>
 
@@ -436,7 +430,7 @@ export function EventInjector({
                 }}
                 className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium transition-colors cursor-pointer ${
                   autoplayIntervalSeconds === sec
-                    ? "bg-white text-black font-bold"
+                    ? "bg-[#2bd97c] text-black font-bold"
                     : "text-[#888888] hover:text-white"
                 }`}
               >
@@ -453,7 +447,7 @@ export function EventInjector({
                 Next Event: <strong className="text-white">{nextAutoplayPreset.label}</strong>
               </span>
               {isAutoplayRunning ? (
-                <span className="font-mono text-amber-400 font-bold">
+                <span className="font-mono text-[#2bd97c] font-bold">
                   {secondsRemaining}s remaining
                 </span>
               ) : (
@@ -465,7 +459,7 @@ export function EventInjector({
             {isAutoplayRunning && (
               <div className="w-full h-1 bg-[#222222] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-amber-400 transition-all duration-1000 ease-linear"
+                  className="h-full bg-[#2bd97c] transition-all duration-1000 ease-linear"
                   style={{
                     width: `${((autoplayIntervalSeconds - secondsRemaining) / autoplayIntervalSeconds) * 100}%`,
                   }}
@@ -479,19 +473,19 @@ export function EventInjector({
                 <button
                   type="button"
                   onClick={switchToManualMode}
-                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-white text-black hover:bg-neutral-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-[#1a1a1a] text-white border border-[#333333] hover:bg-[#282828] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <Wrench className="w-3 h-3" />
-                  <span>Manual Verification</span>
+                  <Pause className="w-3 h-3" />
+                  <span>Pause (Manual Mode)</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={resumeAutopilot}
-                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Play className="w-3 h-3 fill-current" />
-                  <span>Resume Autopilot ({autoplayIntervalSeconds}s)</span>
+                  <span>Resume Autoplay ({autoplayIntervalSeconds}s)</span>
                 </button>
               )}
 

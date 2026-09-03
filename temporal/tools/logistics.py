@@ -15,7 +15,7 @@ async def execute_message_logistics_team(
     """Simulates raising an expedited inquiry with third-party logistics/couriers (e.g. DHL, FedEx, UPS)."""
     timestamp = datetime.now(timezone.utc).isoformat()
     logger.info(
-        f"🚚 [TOOL: message_logistics_team] Order: {order_id} | Carrier: {carrier} | Tracking: {tracking_number} | Issue: {issue_description}"
+        f"[TOOL: message_logistics_team] Order: {order_id} | Carrier: {carrier} | Tracking: {tracking_number} | Issue: {issue_description}"
     )
 
     return {

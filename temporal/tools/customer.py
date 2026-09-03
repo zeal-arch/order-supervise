@@ -15,7 +15,7 @@ async def execute_message_customer(
     """Simulates sending a proactive update or notification to the customer."""
     timestamp = datetime.now(timezone.utc).isoformat()
     logger.info(
-        f"✉️ [TOOL: message_customer] Order: {order_id} | To: {customer_email} | Subject: {subject} | Body: {body}"
+        f"[TOOL: message_customer] Order: {order_id} | To: {customer_email} | Subject: {subject} | Body: {body}"
     )
 
     return {

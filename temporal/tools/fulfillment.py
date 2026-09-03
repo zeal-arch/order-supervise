@@ -8,7 +8,7 @@ logger = logging.getLogger("temporal.tools.fulfillment")
 async def execute_message_fulfillment_team(order_id: str, message: str, priority: str = "normal") -> dict[str, Any]:
     """Simulates sending a priority message/ticket to the warehouse/fulfillment operations team."""
     timestamp = datetime.now(timezone.utc).isoformat()
-    logger.info(f"📦 [TOOL: message_fulfillment_team] Order: {order_id} | Priority: {priority} | Message: {message}")
+    logger.info(f"[TOOL: message_fulfillment_team] Order: {order_id} | Priority: {priority} | Message: {message}")
 
     return {
         "tool": "message_fulfillment_team",

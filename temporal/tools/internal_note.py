@@ -13,7 +13,7 @@ async def execute_create_internal_note(
 ) -> dict[str, Any]:
     """Simulates creating an internal operational note on the order record."""
     timestamp = datetime.now(timezone.utc).isoformat()
-    logger.info(f"📝 [TOOL: create_internal_note] Order: {order_id} | Category: {category} | Flag: {flag_for_human} | Note: {note}")
+    logger.info(f"[TOOL: create_internal_note] Order: {order_id} | Category: {category} | Flag: {flag_for_human} | Note: {note}")
 
     return {
         "tool": "create_internal_note",
