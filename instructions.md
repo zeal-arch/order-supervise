@@ -95,22 +95,22 @@ If you prefer running each service in its own terminal tab:
 
 #### Terminal 1: Temporal Server
 
-If Temporal CLI is installed on your machine (or if you already ran `start-local.ps1` once):
+**Option 1: Using Docker Compose (Recommended - Zero Install)**
+
+```bash
+docker-compose up -d
+```
+
+**Option 2: Using Standalone Temporal CLI**
+
+If you have Temporal CLI (or ran `start-local.ps1` once):
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 temporal server start-dev --port 7233 --ui-port 8233 --ip 127.0.0.1
 ```
 
-*(If Temporal CLI is not installed yet, run this 1-line installer:*
-* Windows: `irm https://temporal.download/cli.ps1 | iex`
-* macOS / Linux: `curl -sSf https://temporal.download/cli.sh | sh`)*
-
-_Or using Docker Compose:_
-
-```bash
-docker-compose up -d
-```
+*(If Temporal CLI is not yet on your system, you can download the binary from [Temporal GitHub Releases](https://github.com/temporalio/cli/releases/latest) or run `irm https://temporal.download/cli.ps1 | iex`)*
 
 _Web Console: http://localhost:8233_
 
