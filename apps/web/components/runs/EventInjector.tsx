@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle,
@@ -12,6 +12,10 @@ import {
   Clock,
   RotateCcw,
   Package,
+  Play,
+  Pause,
+  FastForward,
+  Sparkles,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DomainEvent } from "@/lib/types";
@@ -151,6 +155,15 @@ const EVENT_PRESETS: EventPreset[] = [
   },
 ];
 
+// Complete realistic lifecycle scenario sequence for automated presentations
+const AUTOPLAY_SEQUENCE = [
+  "payment_confirmed",
+  "shipment_created",
+  "shipment_delayed",
+  "customer_message_received",
+  "delivered",
+];
+
 export function EventInjector({
   runId,
   events = [],
@@ -167,6 +180,12 @@ export function EventInjector({
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [customMsg, setCustomMsg] = useState("");
 
+  // Automated Simulation / Autoplay State
+  const [isAutoplayRunning, setIsAutoplayRunning] = useState(false);
+  const [autoplayIntervalSeconds, setAutoplayIntervalSeconds] = useState(30);
+  const [secondsRemaining, setSecondsRemaining] = useState(30);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Domain Lifecycle State Inference
   const eventTypes = new Set(events.map((e) => e.event_type));
   const isPaid = eventTypes.has("payment_confirmed");
@@ -175,8 +194,11 @@ export function EventInjector({
   const isDelivered = eventTypes.has("delivered");
   const isRefunded = eventTypes.has("refund_requested");
 
+  // Determine the next event in the automated scenario that hasn't fired yet
+  const nextAutoplayType = AUTOPLAY_SEQUENCE.find((t) => !eventTypes.has(t)) || null;
+  const nextAutoplayPreset = EVENT_PRESETS.find((p) => p.type === nextAutoplayType);
+
   const getEventDisabledReason = (preset: EventPreset): string | null => {
-    // If order was already refunded or terminated, lock all forward actions
     if (isRefunded && preset.type !== "customer_message_received") {
       return "Order Refunded & Closed";
     }
@@ -205,6 +227,7 @@ export function EventInjector({
 
       case "shipment_delayed":
       case "delivery_attempt_failed":
+      case "customer_not_home":
       case "no_update_for_n_hours":
         if (!isShipped) return "Requires Shipment Dispatch First";
         if (isDelivered) return "Parcel Already Delivered";
@@ -252,6 +275,60 @@ export function EventInjector({
     }
   };
 
+  // Autoplay countdown timer tick
+  useEffect(() => {
+    if (!isAutoplayRunning) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
+    if (!nextAutoplayPreset) {
+      setIsAutoplayRunning(false);
+      setStatusMsg("Scenario completed. All lifecycle milestones reached!");
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          // Trigger next event
+          if (nextAutoplayPreset) {
+            handleInject(nextAutoplayPreset);
+          }
+          return autoplayIntervalSeconds;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isAutoplayRunning, nextAutoplayPreset, autoplayIntervalSeconds]);
+
+  const toggleAutoplay = () => {
+    if (!isAutoplayRunning) {
+      if (!nextAutoplayPreset) {
+        setStatusMsg("Order has already reached its final delivery milestone.");
+        return;
+      }
+      setSecondsRemaining(autoplayIntervalSeconds);
+      setIsAutoplayRunning(true);
+      setStatusMsg(`Autopilot started. Next event will fire in ${autoplayIntervalSeconds}s.`);
+    } else {
+      setIsAutoplayRunning(false);
+      setStatusMsg("Autopilot paused.");
+    }
+  };
+
+  const skipNextAutoplayEvent = () => {
+    if (nextAutoplayPreset) {
+      handleInject(nextAutoplayPreset);
+      setSecondsRemaining(autoplayIntervalSeconds);
+    }
+  };
+
   const handleSendCustomMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customMsg.trim()) return;
@@ -294,6 +371,107 @@ export function EventInjector({
         </p>
       </div>
 
+      {/* Autoplay / Auto-Simulation Banner (30s Gap) */}
+      <div className="p-3 rounded-[10px] bg-[#161616] border border-[#303030] space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span className="text-xs font-semibold text-white">Scenario Autopilot</span>
+          </div>
+
+          {/* Speed interval selector */}
+          <div className="flex items-center gap-1 bg-[#101010] p-0.5 rounded border border-[#282828]">
+            {([5, 10, 30] as const).map((sec) => (
+              <button
+                key={sec}
+                type="button"
+                onClick={() => {
+                  setAutoplayIntervalSeconds(sec);
+                  if (secondsRemaining > sec) setSecondsRemaining(sec);
+                }}
+                className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium transition-colors cursor-pointer ${
+                  autoplayIntervalSeconds === sec
+                    ? "bg-white text-black font-bold"
+                    : "text-[#888888] hover:text-white"
+                }`}
+              >
+                {sec}s
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {nextAutoplayPreset ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-[#a0a0a0]">
+              <span>
+                Next: <strong className="text-white">{nextAutoplayPreset.label}</strong>
+              </span>
+              {isAutoplayRunning ? (
+                <span className="font-mono text-amber-400 font-bold">
+                  {secondsRemaining}s remaining
+                </span>
+              ) : (
+                <span className="text-neutral-500 font-mono">Paused</span>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            {isAutoplayRunning && (
+              <div className="w-full h-1 bg-[#222222] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-400 transition-all duration-1000 ease-linear"
+                  style={{
+                    width: `${((autoplayIntervalSeconds - secondsRemaining) / autoplayIntervalSeconds) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Autopilot Controls */}
+            <div className="flex gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={toggleAutoplay}
+                className={`flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  isAutoplayRunning
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30"
+                    : "bg-white text-black hover:bg-neutral-200"
+                }`}
+              >
+                {isAutoplayRunning ? (
+                  <>
+                    <Pause className="w-3 h-3" />
+                    <span>Pause Autopilot</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Auto-Play Sequence ({autoplayIntervalSeconds}s)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={skipNextAutoplayEvent}
+                disabled={loadingType !== null}
+                title="Skip timer and fire next event immediately"
+                className="py-1.5 px-2.5 rounded-[6px] bg-[#222222] hover:bg-[#303030] text-neutral-300 text-xs font-semibold border border-[#333333] transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-40"
+              >
+                <FastForward className="w-3 h-3" />
+                <span>Skip</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 py-1">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>All scenario milestones have been completed.</span>
+          </div>
+        )}
+      </div>
+
       {/* Scenario Filter Tabs */}
       <div className="flex gap-1 p-1 rounded-[8px] bg-[#141414] border border-[#2a2a2a]">
         {(
@@ -320,7 +498,7 @@ export function EventInjector({
       </div>
 
       {/* Preset Action Grid */}
-      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
         {filteredPresets.map((preset) => {
           const Icon = preset.icon;
           const isLoading = loadingType === preset.type;

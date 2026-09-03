@@ -1,5 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@5/overview/configuration-schema.json",
   "next": true,
-  "ignoreDependencies": ["clsx", "tailwind-merge"]
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "types": "off",
+    "exports": "off"
+  }
 }

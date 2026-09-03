@@ -136,12 +136,48 @@ _Web Dashboard: http://localhost:3000_
 
 ---
 
-## 3. Demo Order & Verification
+## 3. Simulating Events & Testing Autonomous Agent Actions
 
-1. Open `http://localhost:3000` in your browser.
-2. Visit `http://localhost:3000/runs/run_demo_1001` to view the seeded test order (`ORD-1001`, Sarah Connor).
-3. Use the **Event Generator & Simulator** panel on the right to inject events (e.g. `payment_confirmed`, `shipment_delayed`, `delivered`).
-4. Type live instructions (e.g. _"Prioritize speed over cost"_) in the **Dynamic Operator Directives** box and click Apply.
+You can simulate order lifecycle events either **via the Web UI** or **via the CLI script**, using either **Automated Mode (30s intervals)** or **Manual Mode**.
+
+### Option A: Via Web UI Dashboard (Recommended for Presentations)
+
+1. Open `http://localhost:3000` in your browser and click on any order (or `ORD-1001` / `run_demo_1001`).
+2. On the right-side **Signal & Event Simulator** panel, you will see two modes:
+   - **Automated Autopilot (30s Gap)**:
+     - Click **`Auto-Play Sequence (30s)`**.
+     - The simulator will automatically progress through the complete order lifecycle (`Payment Verified` -> `Shipment Dispatched` -> `Carrier Delay` -> `Customer Inquiry` -> `Delivered`) with a 30-second delay between each event.
+     - You will see the countdown timer, live agent wakeups, tool executions, and timeline updates in real-time.
+     - You can pause anytime or click **`Skip`** to immediately trigger the next event without waiting.
+   - **Manual Single-Event Triggering**:
+     - Click any individual event button (e.g. *Payment Verified*, *Carrier Delay Alert*, *Customer Not Home*, *Delivered*).
+     - Type a custom message in the *Simulate Inbound Customer Message* box to test customer support handling.
+3. In the **Dynamic Operator Directives** tab, enter instructions like *"Prioritize speed over cost"* or *"Do not contact customer without human review"* to watch the agent adapt its tool calling dynamically.
+
+---
+
+### Option B: Via Command Line Script (`simulate-events.py`)
+
+You can also simulate events directly from a terminal:
+
+**1. Automated Full Lifecycle Simulation (30-second gaps):**
+```powershell
+.\.venv\Scripts\Activate.ps1
+python scripts/simulate-events.py --auto --interval 30
+```
+
+*(You can adjust `--interval 10` or `--interval 5` for faster presentations).*
+
+**2. Interactive Manual Event Selection:**
+```powershell
+python scripts/simulate-events.py
+```
+*(Presents an interactive menu where you can choose Option `A` for full auto-simulation or select individual events `1-9`).*
+
+**3. Injecting a Live Operator Directive via CLI:**
+```powershell
+python scripts/simulate-events.py --instruction "For this order, prioritize speed over cost."
+```
 
 ---
 
