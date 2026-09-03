@@ -182,6 +182,31 @@ python scripts/simulate-events.py --instruction "For this order, prioritize spee
 
 ## 4. Running Tests
 
+### 4.1 Comprehensive End-to-End Live Workflow Test (`scripts/run-comprehensive-test.py`)
+
+This test executes a complete, real-time end-to-end evaluation against the running Temporal server and FastAPI backend. It subjects a VIP order to **5 domain milestone events** and **2 live human operator interventions**:
+
+1. **Order Launch**: Starts VIP order ($1,850.00) with `VIP & High-Value Order Supervisor`.
+2. **Milestone 1 (`payment_confirmed`)**: Agent wakes up, verifies payment, and dispatches rush packing to fulfillment.
+3. **Milestone 2 (`shipment_created`)**: Agent captures FedEx tracking and sends customer tracking update.
+4. **Human Intervention 1 (Operator Steering)**: Operator injects a live mid-flight directive:  
+   *`"VIP Client Rule: If any courier delay occurs, immediately escalate to Tier-3 logistics and offer a 20% future store credit."`*
+5. **Milestone 3 (`shipment_delayed`)**: Severe 72h blizzard delay. Agent wakes up immediately, **incorporates the live operator directive**, opens a Tier-3 logistics case, and emails customer offering the 20% credit.
+6. **Human Intervention 2 (Pause & Resume)**: Tests workflow control plane by sending `pause_signal` (locks workflow) and `resume_signal` (resumes workflow cleanly).
+7. **Milestone 4 (`customer_message_received`)**: Customer inquires about blizzard safety. Agent answers with updated timeline.
+8. **Milestone 5 (`delivered`)**: Carrier confirms delivery. Agent compiles final summary, key learnings, and recommendations.
+
+**To run the comprehensive live test:**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python scripts/run-comprehensive-test.py
+```
+
+---
+
+### 4.2 Automated Test Suites (Pytest)
+
 To run the full automated test suite (32 tests):
 
 ```powershell

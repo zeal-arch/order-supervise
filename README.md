@@ -139,7 +139,15 @@ bash scripts/start-local.sh
 
 ## Verification & Automated Testing
 
-Run the full automated test suite (32 tests):
+### 1. End-to-End Live Workflow Test (5 Milestones + 2 Human Interventions)
+Run a complete live test with multiple events, operator directives, and pause/resume control:
+
+```bash
+python scripts/run-comprehensive-test.py
+```
+
+### 2. Full Automated Pytest Suite (32 Tests)
+Run unit, workflow, and API property fuzzing tests:
 
 ```bash
 pytest tests
