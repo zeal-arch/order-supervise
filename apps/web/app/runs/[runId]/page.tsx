@@ -27,7 +27,8 @@ import { RunControls } from "@/components/runs/RunControls";
 export default function RunDetailPage({ params }: { params: { runId: string } }) {
   const runId = params.runId;
   const searchParams = useSearchParams();
-  const initialAutoplay = searchParams.get("autoplay") === "true";
+  const isManualMode = searchParams.get("mode") === "manual" || searchParams.get("autoplay") === "false";
+  const initialAutoplay = !isManualMode;
 
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(true);

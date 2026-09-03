@@ -46,7 +46,7 @@ function DashboardContent() {
     return () => clearInterval(interval);
   }, [searchParams]);
 
-  const handleStartRun = async (e: React.FormEvent, withAutoplay = false) => {
+  const handleStartRun = async (e: React.FormEvent, withAutoplay = true) => {
     e.preventDefault();
     const orderId = newOrderId.trim() || `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     setCreating(true);
@@ -55,7 +55,7 @@ function DashboardContent() {
         order_id: orderId,
         supervisor_id: selectedSup || undefined,
       });
-      router.push(`/runs/${newRun.id}${withAutoplay ? "?autoplay=true" : ""}`);
+      router.push(`/runs/${newRun.id}${withAutoplay ? "" : "?mode=manual"}`);
     } catch (e: any) {
       alert(`Error starting run: ${e.message}`);
       setCreating(false);
@@ -85,7 +85,7 @@ function DashboardContent() {
 
         {/* Order Creator with Supervisor Template Selection */}
         <form
-          onSubmit={(e) => handleStartRun(e, false)}
+          onSubmit={(e) => handleStartRun(e, true)}
           className="bg-[#1a1a1a] border border-[#2e2e2e] p-5 rounded-[12px] space-y-3 w-full lg:w-auto min-w-[420px]"
         >
           <div className="flex items-center justify-between">
@@ -125,25 +125,25 @@ function DashboardContent() {
               </select>
             </div>
 
-            {/* Action Buttons: Standard Launch + Auto-Simulate Button */}
+            {/* Action Buttons: Default Autoplay + Manual Mode Option */}
             <div className="flex gap-2 pt-1">
               <button
                 type="submit"
                 disabled={creating}
                 className="flex-1 py-2.5 px-3 rounded-[8px] bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <span>{creating ? "Launching..." : "Launch Order"}</span>
+                <span>{creating ? "Launching..." : "Launch Order (Autoplay)"}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
                 type="button"
                 disabled={creating}
-                onClick={(e) => handleStartRun(e, true)}
-                className="flex-1 py-2.5 px-3 rounded-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold hover:bg-amber-500/30 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
-                title="Launch order and automatically simulate the complete lifecycle with 30s intervals"
+                onClick={(e) => handleStartRun(e, false)}
+                className="py-2.5 px-3 rounded-[8px] bg-[#141414] text-neutral-300 border border-neutral-700 text-xs font-semibold hover:text-white hover:border-neutral-500 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
+                title="Launch order in manual mode to trigger individual events by hand"
               >
-                <span>⚡ Auto-Play (30s)</span>
+                <span>Manual</span>
               </button>
             </div>
           </div>

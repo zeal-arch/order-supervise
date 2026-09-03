@@ -16,6 +16,8 @@ import {
   Pause,
   FastForward,
   Sparkles,
+  Wrench,
+  Zap,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DomainEvent } from "@/lib/types";
@@ -155,7 +157,7 @@ const EVENT_PRESETS: EventPreset[] = [
   },
 ];
 
-// Complete realistic lifecycle scenario sequence for automated presentations
+// Complete realistic lifecycle scenario sequence for automated autopilot
 const AUTOPLAY_SEQUENCE = [
   "payment_confirmed",
   "shipment_created",
@@ -168,7 +170,7 @@ export function EventInjector({
   runId,
   events = [],
   status = "RUNNING",
-  initialAutoplay = false,
+  initialAutoplay = true, // Autoplay is ON by default for every order
   onEventSent,
 }: {
   runId: string;
@@ -182,12 +184,6 @@ export function EventInjector({
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [customMsg, setCustomMsg] = useState("");
 
-  // Automated Simulation / Autoplay State
-  const [isAutoplayRunning, setIsAutoplayRunning] = useState(initialAutoplay);
-  const [autoplayIntervalSeconds, setAutoplayIntervalSeconds] = useState(30);
-  const [secondsRemaining, setSecondsRemaining] = useState(30);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Domain Lifecycle State Inference
   const eventTypes = new Set(events.map((e) => e.event_type));
   const isPaid = eventTypes.has("payment_confirmed");
@@ -195,10 +191,19 @@ export function EventInjector({
   const isShipped = eventTypes.has("shipment_created");
   const isDelivered = eventTypes.has("delivered");
   const isRefunded = eventTypes.has("refund_requested");
+  const isTerminal = status === "COMPLETED" || status === "TERMINATED" || isDelivered;
 
   // Determine the next event in the automated scenario that hasn't fired yet
   const nextAutoplayType = AUTOPLAY_SEQUENCE.find((t) => !eventTypes.has(t)) || null;
   const nextAutoplayPreset = EVENT_PRESETS.find((p) => p.type === nextAutoplayType);
+
+  // Automated Simulation / Autoplay State (default to true if not terminal)
+  const [isAutoplayRunning, setIsAutoplayRunning] = useState(
+    initialAutoplay && !isTerminal && nextAutoplayPreset !== undefined
+  );
+  const [autoplayIntervalSeconds, setAutoplayIntervalSeconds] = useState(30);
+  const [secondsRemaining, setSecondsRemaining] = useState(30);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const getEventDisabledReason = (preset: EventPreset): string | null => {
     if (isRefunded && preset.type !== "customer_message_received") {
@@ -277,7 +282,7 @@ export function EventInjector({
     }
   };
 
-  // Autoplay countdown timer tick
+  // Autoplay countdown timer tick (auto progresses every 30 seconds)
   useEffect(() => {
     if (!isAutoplayRunning) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -309,19 +314,20 @@ export function EventInjector({
     };
   }, [isAutoplayRunning, nextAutoplayPreset, autoplayIntervalSeconds]);
 
-  const toggleAutoplay = () => {
-    if (!isAutoplayRunning) {
-      if (!nextAutoplayPreset) {
-        setStatusMsg("Order has already reached its final delivery milestone.");
-        return;
-      }
-      setSecondsRemaining(autoplayIntervalSeconds);
-      setIsAutoplayRunning(true);
-      setStatusMsg(`Autopilot started. Next event will fire in ${autoplayIntervalSeconds}s.`);
-    } else {
-      setIsAutoplayRunning(false);
-      setStatusMsg("Autopilot paused.");
+  const switchToManualMode = () => {
+    setIsAutoplayRunning(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setStatusMsg("Manual Verification Mode activated. Click any button below to trigger events.");
+  };
+
+  const resumeAutopilot = () => {
+    if (!nextAutoplayPreset) {
+      setStatusMsg("Order has already reached its final delivery milestone.");
+      return;
     }
+    setSecondsRemaining(autoplayIntervalSeconds);
+    setIsAutoplayRunning(true);
+    setStatusMsg(`Autopilot resumed. Next event in ${autoplayIntervalSeconds}s.`);
   };
 
   const skipNextAutoplayEvent = () => {
@@ -361,24 +367,61 @@ export function EventInjector({
 
   return (
     <div className="p-5 rounded-[16px] bg-[#202020] border border-[#333333] space-y-4">
+      {/* Header & Mode Switcher */}
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm text-white tracking-tight">Signal & Event Simulator</h3>
-          <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-[#141414] text-neutral-400 font-mono border border-neutral-700">
-            Interactive
-          </span>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-sm text-white tracking-tight">Signal & Event Simulator</h3>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-[4px] font-mono font-bold uppercase tracking-wider ${
+                isAutoplayRunning
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-white/10 text-white border border-white/20"
+              }`}
+            >
+              {isAutoplayRunning ? "AUTOPLAY (30s)" : "MANUAL MODE"}
+            </span>
+          </div>
+
+          {/* Quick Manual / Autoplay Mode Toggle Button */}
+          {isAutoplayRunning ? (
+            <button
+              type="button"
+              onClick={switchToManualMode}
+              className="px-2.5 py-1 rounded-[6px] bg-[#141414] hover:bg-[#282828] text-white text-xs font-semibold border border-[#3a3a3a] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+              title="Pause automation and switch to manual verification"
+            >
+              <Wrench className="w-3 h-3 text-amber-400" />
+              <span>Manual</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={resumeAutopilot}
+              disabled={!nextAutoplayPreset}
+              className="px-2.5 py-1 rounded-[6px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+              title="Resume automatic 30s event progression"
+            >
+              <Zap className="w-3 h-3 text-amber-400" />
+              <span>Autoplay (30s)</span>
+            </button>
+          )}
         </div>
         <p className="text-xs text-[#a0a0a0] mt-0.5">
-          Trigger domain signals to test autonomous agent decisions in real-time.
+          {isAutoplayRunning
+            ? "Autopilot is advancing the order through all milestone events with a 30s gap."
+            : "Manual mode enabled. Trigger events or type custom messages below."}
         </p>
       </div>
 
-      {/* Autoplay / Auto-Simulation Banner (30s Gap) */}
+      {/* Autopilot Status & Controls Card */}
       <div className="p-3 rounded-[10px] bg-[#161616] border border-[#303030] space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span className="text-xs font-semibold text-white">Scenario Autopilot</span>
+            <span className="text-xs font-semibold text-white">
+              {isAutoplayRunning ? "Autopilot Active (Lifecycle Simulation)" : "Autopilot Paused"}
+            </span>
           </div>
 
           {/* Speed interval selector */}
@@ -407,14 +450,14 @@ export function EventInjector({
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] text-[#a0a0a0]">
               <span>
-                Next: <strong className="text-white">{nextAutoplayPreset.label}</strong>
+                Next Event: <strong className="text-white">{nextAutoplayPreset.label}</strong>
               </span>
               {isAutoplayRunning ? (
                 <span className="font-mono text-amber-400 font-bold">
                   {secondsRemaining}s remaining
                 </span>
               ) : (
-                <span className="text-neutral-500 font-mono">Paused</span>
+                <span className="text-neutral-500 font-mono">Paused (Manual Mode)</span>
               )}
             </div>
 
@@ -430,35 +473,33 @@ export function EventInjector({
               </div>
             )}
 
-            {/* Autopilot Controls */}
+            {/* Controls */}
             <div className="flex gap-1.5 pt-0.5">
-              <button
-                type="button"
-                onClick={toggleAutoplay}
-                className={`flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                  isAutoplayRunning
-                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30"
-                    : "bg-white text-black hover:bg-neutral-200"
-                }`}
-              >
-                {isAutoplayRunning ? (
-                  <>
-                    <Pause className="w-3 h-3" />
-                    <span>Pause Autopilot</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Auto-Play Sequence ({autoplayIntervalSeconds}s)</span>
-                  </>
-                )}
-              </button>
+              {isAutoplayRunning ? (
+                <button
+                  type="button"
+                  onClick={switchToManualMode}
+                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-white text-black hover:bg-neutral-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Wrench className="w-3 h-3" />
+                  <span>Manual Verification</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={resumeAutopilot}
+                  className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Play className="w-3 h-3 fill-current" />
+                  <span>Resume Autopilot ({autoplayIntervalSeconds}s)</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={skipNextAutoplayEvent}
                 disabled={loadingType !== null}
-                title="Skip timer and fire next event immediately"
+                title="Trigger next milestone immediately"
                 className="py-1.5 px-2.5 rounded-[6px] bg-[#222222] hover:bg-[#303030] text-neutral-300 text-xs font-semibold border border-[#333333] transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-40"
               >
                 <FastForward className="w-3 h-3" />
@@ -469,113 +510,124 @@ export function EventInjector({
         ) : (
           <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 py-1">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>All scenario milestones have been completed.</span>
+            <span>All 5 scenario milestones completed (Delivered).</span>
           </div>
         )}
       </div>
 
-      {/* Scenario Filter Tabs */}
-      <div className="flex gap-1 p-1 rounded-[8px] bg-[#141414] border border-[#2a2a2a]">
-        {(
-          [
-            { id: "all", label: "All" },
-            { id: "shipping", label: "Shipping" },
-            { id: "payments", label: "Payments" },
-            { id: "customer", label: "Customer" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActiveTab(t.id)}
-            className={`flex-1 text-[11px] py-1 rounded-[6px] font-medium transition-colors cursor-pointer text-center ${
-              activeTab === t.id
-                ? "bg-[#282828] text-white font-semibold shadow-sm"
-                : "text-[#888888] hover:text-white"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Manual Verification Section (Tabs & Individual Event Buttons) */}
+      <div className="space-y-3 pt-1 border-t border-[#2a2a2a]">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-white">Manual Event Injection</span>
+          <span className="text-[10px] text-neutral-400 font-mono">Interactive</span>
+        </div>
 
-      {/* Preset Action Grid */}
-      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-        {filteredPresets.map((preset) => {
-          const Icon = preset.icon;
-          const isLoading = loadingType === preset.type;
-          const disabledReason = getEventDisabledReason(preset);
-          const isDisabled = disabledReason !== null || loadingType !== null;
-
-          return (
+        {/* Filter Tabs */}
+        <div className="flex gap-1 p-1 rounded-[8px] bg-[#141414] border border-[#2a2a2a]">
+          {(
+            [
+              { id: "all", label: "All" },
+              { id: "shipping", label: "Shipping" },
+              { id: "payments", label: "Payments" },
+              { id: "customer", label: "Customer" },
+            ] as const
+          ).map((t) => (
             <button
-              key={preset.type}
+              key={t.id}
               type="button"
-              disabled={isDisabled}
-              onClick={() => handleInject(preset)}
-              className={`w-full text-left p-2.5 rounded-[8px] border transition-all space-y-1 ${
-                isDisabled
-                  ? "opacity-35 bg-[#141414] border-[#222222] cursor-not-allowed"
-                  : "bg-[#161616] border-[#2e2e2e] hover:border-[#444444] cursor-pointer"
+              onClick={() => setActiveTab(t.id)}
+              className={`flex-1 text-[11px] py-1 rounded-[6px] font-medium transition-colors cursor-pointer text-center ${
+                activeTab === t.id
+                  ? "bg-[#282828] text-white font-semibold shadow-sm"
+                  : "text-[#888888] hover:text-white"
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Icon className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                  <span className={`text-xs font-semibold ${isDisabled ? "text-neutral-500" : "text-white"}`}>
-                    {preset.label}
-                  </span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Preset Action Grid */}
+        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+          {filteredPresets.map((preset) => {
+            const Icon = preset.icon;
+            const isLoading = loadingType === preset.type;
+            const disabledReason = getEventDisabledReason(preset);
+            const isDisabled = disabledReason !== null || loadingType !== null;
+
+            return (
+              <button
+                key={preset.type}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => {
+                  switchToManualMode(); // auto switch to manual when user clicks single event
+                  handleInject(preset);
+                }}
+                className={`w-full text-left p-2.5 rounded-[8px] border transition-all space-y-1 ${
+                  isDisabled
+                    ? "opacity-35 bg-[#141414] border-[#222222] cursor-not-allowed"
+                    : "bg-[#161616] border-[#2e2e2e] hover:border-[#444444] cursor-pointer"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                    <span className={`text-xs font-semibold ${isDisabled ? "text-neutral-500" : "text-white"}`}>
+                      {preset.label}
+                    </span>
+                  </div>
+
+                  {disabledReason ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#101010] text-neutral-500 border border-neutral-800 font-mono whitespace-nowrap">
+                      {disabledReason}
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded-[4px] uppercase font-mono font-bold tracking-wider ${
+                        preset.category === "critical"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : preset.category === "terminal"
+                          ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                          : "bg-[#101010] text-[#888888] border border-[#2e2e2e]"
+                      }`}
+                    >
+                      {preset.category}
+                    </span>
+                  )}
                 </div>
 
-                {disabledReason ? (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#101010] text-neutral-500 border border-neutral-800 font-mono whitespace-nowrap">
-                    {disabledReason}
-                  </span>
-                ) : (
-                  <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-[4px] uppercase font-mono font-bold tracking-wider ${
-                      preset.category === "critical"
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        : preset.category === "terminal"
-                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                        : "bg-[#101010] text-[#888888] border border-[#2e2e2e]"
-                    }`}
-                  >
-                    {preset.category}
-                  </span>
-                )}
-              </div>
-
-              <p className="text-[11px] text-[#999999] leading-snug">{preset.desc}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Custom Inbound Message Simulator */}
-      <form onSubmit={handleSendCustomMessage} className="pt-2 border-t border-[#2e2e2e] space-y-2">
-        <label className="block text-[11px] font-semibold text-white">
-          Simulate Inbound Customer Message
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="e.g. Please hold at local depot..."
-            value={customMsg}
-            onChange={(e) => setCustomMsg(e.target.value)}
-            disabled={loadingType !== null}
-            className="flex-1 text-xs px-3 py-2 rounded-[6px] bg-[#141414] border border-[#2e2e2e] text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={loadingType !== null || !customMsg.trim()}
-            className="px-3 py-2 rounded-[6px] bg-white text-black text-xs font-semibold disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
-          >
-            <Send className="w-3 h-3" />
-            <span>Send</span>
-          </button>
+                <p className="text-[11px] text-[#999999] leading-snug">{preset.desc}</p>
+              </button>
+            );
+          })}
         </div>
-      </form>
+
+        {/* Custom Inbound Message Simulator */}
+        <form onSubmit={handleSendCustomMessage} className="pt-2 border-t border-[#2e2e2e] space-y-2">
+          <label className="block text-[11px] font-semibold text-white">
+            Simulate Inbound Customer Message
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. Please hold at local depot..."
+              value={customMsg}
+              onChange={(e) => setCustomMsg(e.target.value)}
+              disabled={loadingType !== null}
+              className="flex-1 text-xs px-3 py-2 rounded-[6px] bg-[#141414] border border-[#2e2e2e] text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={loadingType !== null || !customMsg.trim()}
+              className="px-3 py-2 rounded-[6px] bg-white text-black text-xs font-semibold disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              <Send className="w-3 h-3" />
+              <span>Send</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
       {statusMsg && (
         <div className="text-[11px] font-medium text-white text-center p-2 rounded-[6px] bg-[#141414] border border-[#2e2e2e]">
