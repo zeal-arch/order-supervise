@@ -17,7 +17,7 @@ This guide provides a structured, step-by-step walkthrough outline for evaluatin
 ### Step 1: Supervisor Profile Configuration
 - **Location**: `http://localhost:3000/supervisors`
 - **Actions**:
-  1. Inspect pre-configured supervisor templates (*Standard Retail Guardian*, *VIP Express Supervisor*, *Cost-Efficient Logistics*).
+  1. Inspect pre-configured supervisor templates (*Standard E-Commerce Supervisor*, *VIP & High-Value Order Supervisor*, *Returns & Disputed Orders Supervisor*).
   2. Demonstrate how wake sensitivity modes (*Aggressive*, *Balanced*, *Conservative*) harmonize with default sleep intervals (*1800s*, *3600s*, *7200s*).
   3. Create a custom supervisor profile (e.g. `VIP Priority v2`) with custom directives and tool selections.
   4. Demonstrate duplicate name prevention: typing an existing name shows an inline warning and disables submission.
@@ -25,69 +25,74 @@ This guide provides a structured, step-by-step walkthrough outline for evaluatin
 
 ---
 
-### Step 2: Launching an Order Workflow
-- **Location**: `http://localhost:3000` (Dashboard)
+### Step 2: Browsing the Seeded Order Catalog (14 Orders)
+- **Location**: `http://localhost:3000/runs` (Runs Catalog)
 - **Actions**:
-  1. Enter an Order ID (e.g. `ORD-8820`) or click **"+ Random ID"**.
-  2. Select the supervisor template from the dropdown.
-  3. Click **"Launch"** to start the workflow.
-  4. View the 2-panel cockpit on `/runs/run_XXXX`:
-     - Left column: Chronological Execution & Activity Trace (`EVENT` and `ACTION` tags).
-     - Right column: Sticky operational sidebar with Event Simulator, AI Memory, and Human Guidance tabs.
-  5. Switch to **Temporal Web UI** (`http://localhost:8233`) and show `order-supervisor-ORD-8820` with status `Running` and event `WorkflowExecutionStarted`.
+  1. Filter by **`ALL (14)`**, **`ACTIVE (9)`**, **`COMPLETED (3)`**, or **`PAUSED (1)`**.
+  2. Demonstrate the variety of realistic e-commerce scenarios:
+     - `ORD-1001` (Sarah Connor): VIP split keyboard awaiting courier scan.
+     - `ORD-1003` (Elena Rostova): Active 48h blizzard delay with carrier ticket.
+     - `ORD-1005` (Amara Okafor): 1st delivery attempt failed with 3 reschedule slots.
+     - `ORD-1007` (Chloe Bennett): Completed delivery with full AI post-mortem.
+     - `ORD-1012` (James Wilson): Paused by operator for compliance review.
+  3. Click on any order (e.g. `ORD-1001` / `run_demo_1001`) to open the Operator Cockpit.
 
 ---
 
-### Step 3: Event Ingestion & Autonomous Tool Execution
-- **Location**: `http://localhost:3000/runs/run_XXXX` (Operator Cockpit)
+### Step 3: Automated Lifecycle Autopilot (30s Default)
+- **Location**: `http://localhost:3000/runs/run_demo_1001`
 - **Actions**:
-  1. In the simulator sidebar, click **"Payment Verified"** $\rightarrow$ Agent logs confirmation and notifies warehouse to pack.
-  2. Click **"Shipment Dispatched"** $\rightarrow$ Agent records FedEx tracking number (`FX-99881122`) and emails the customer.
-  3. Click **"Carrier Delay Alert"** (48h blizzard delay) $\rightarrow$ The two-tier classifier marks this as `CRITICAL`:
-     - Agent opens a carrier ticket with FedEx (`message_logistics_team`).
-     - Agent sends a proactive update email to the customer (`message_customer`).
-     - Agent records an internal incident note and schedules its next check in 1 hour.
-  4. Click **"View Supervisor Decision"** to expand the agent's step-by-step reasoning trace.
+  1. Observe that **Autopilot is active by default**:
+     - The top badge reads `AUTOPLAY (30s)`.
+     - The countdown timer ticks down from 30 seconds with a real-time green progress bar.
+  2. As each milestone fires automatically:
+     - `Payment Verified` $\rightarrow$ Agent logs confirmation and notifies warehouse to pack.
+     - `Shipment Dispatched` (30s) $\rightarrow$ Agent captures FedEx tracking (`FX-99881122`) and emails customer.
+     - `Carrier Delay Alert` (30s) $\rightarrow$ Agent opens a FedEx escalation ticket and emails customer.
+     - `Customer Inquiry` (30s) $\rightarrow$ Agent answers customer inquiry with tracking ETA.
+     - `Parcel Delivered` (30s) $\rightarrow$ Concludes order and compiles AI post-mortem report.
+  3. Demonstrate speed toggles: switch between **`5s`**, **`10s`**, and **`30s`** intervals on the fly.
+  4. Click **`Skip`** to immediately advance to the next event without waiting for the timer.
 
 ---
 
-### Step 4: Mid-Flight Human Operator Steering
+### Step 4: Manual Verification Mode
+- **Location**: `http://localhost:3000/runs/run_XXXX` $\rightarrow$ Signal & Event Simulator
+- **Actions**:
+  1. Click **`[ Manual ]`** at the top of the simulator panel.
+  2. The automated timer immediately pauses, shifting the view to manual mode.
+  3. Click any individual event button (e.g. *Payment Declined*, *Customer Not Home*, *No Tracking Update*).
+  4. In the *Simulate Inbound Customer Message* box, type a custom question:
+     *"Can you please hold my package at the local depot for 24 hours?"*
+  5. Click **Send** $\rightarrow$ Watch the agent evaluate the request, call `message_logistics_team`, and confirm the depot hold.
+  6. Click **`[ Autoplay (30s) ]`** to resume automated milestone progression.
+
+---
+
+### Step 5: Dynamic Human Operator Steering
 - **Location**: Right sidebar $\rightarrow$ **Human Guidance** tab
 - **Actions**:
-  1. Select a quick preset or type a custom instruction:
-     `"Offer 15% refund credit if customer complains about delay"`
-  2. Click **"[Steer AI]"**.
-  3. In the event simulator, send an inbound customer inquiry:
-     *"Hi, will my order be delayed further due to the blizzard?"*
-  4. Observe the agent incorporating the 15% refund policy into its response and active memory context.
+  1. Select a quick preset or enter a custom directive:
+     `"For this order, prioritize speed over cost."`
+  2. Click **Apply Directive**.
+  3. Observe the instruction saved to active memory context. On the next event wake, the agent references this directive in its reasoning trace.
 
 ---
 
-### Step 5: Memory Inspection & Raw JSON Export
-- **Location**: Right sidebar $\rightarrow$ **AI Memory State** card
-- **Actions**:
-  1. Inspect the rolling state narrative and milestone bullet list.
-  2. Toggle from **"Summary"** to **"JSON"** view to inspect the compacted memory tree.
-  3. Click **"Copy"** to copy `JSON.stringify(memory, null, 2)` to the clipboard.
-
----
-
-### Step 6: Workflow Lifecycle Controls (Pause / Resume)
+### Step 6: Workflow Lifecycle Controls (Pause / Resume / Terminate)
 - **Location**: Top control bar
 - **Actions**:
-  1. Click **"Pause"** $\rightarrow$ Workflow status transitions to `PAUSED`, locking simulator actions.
-  2. Click **"Resume"** $\rightarrow$ Workflow returns to `RUNNING` / `SLEEPING`.
+  1. Click **Pause** $\rightarrow$ Workflow transitions to `PAUSED`, locking signal processing.
+  2. Click **Resume** $\rightarrow$ Workflow returns to `RUNNING` / `SLEEPING`.
 
 ---
 
-### Step 7: Order Completion & Terminal Post-Mortem Report
-- **Location**: Simulator sidebar
+### Step 7: Terminal Post-Mortem & Strategic Output
+- **Location**: Completed run (e.g. `ORD-1007` or after `Parcel Delivered`)
 - **Actions**:
-  1. Click **"Parcel Delivered"**.
-  2. Order transitions to `COMPLETED`.
-  3. Review the generated **Post-Mortem & Learnings** report:
-     - Final Summary narrative.
-     - Complete list of important actions taken.
-     - Strategic key learnings on courier performance.
-     - Operational feedback and recommendations.
-  4. Verify in Temporal UI (`http://localhost:8233`) that the workflow has closed cleanly with a complete event ledger.
+  1. Inspect the generated **Terminal Post-Mortem Report**:
+     - Final Summary narrative of the order lifecycle.
+     - Important actions taken across all tools.
+     - Strategic key learnings on courier performance and delay management.
+     - Operational feedback and recommendations for supply chain optimization.
+  2. Open **Temporal Web UI** (`http://localhost:8233`) and verify that the workflow completed cleanly with a full audit ledger.

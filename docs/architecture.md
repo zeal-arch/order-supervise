@@ -11,11 +11,12 @@ Key architectural properties:
 - **Durable Lifecycle State**: The workflow execution survives server restarts, process crashes, and network partitions without losing variables, timers, or history.
 - **Zero-CPU Dormancy**: Between events, the agent remains completely dormant using Temporal timers (`workflow.wait_condition`), consuming 0 tokens and 0% CPU.
 - **Event-Driven Reactivity**: Incoming domain signals immediately wake the workflow to evaluate operational risk and take corrective actions.
+- **Dual Simulation Modes**: Supports automatic 30-second milestone lifecycle playback by default alongside interactive manual signal injection.
 
 ```
 +-------------------------------------------------------------------------+
 |                               Next.js 14 UI                             |
-|          Operator Cockpit, Event Simulator, Profile Configuration       |
+|    Operator Cockpit, 30s Autopilot Simulator, Profile Configuration     |
 +-------------------------------------------------------------------------+
                                     |
                                     | HTTP REST
@@ -61,10 +62,7 @@ The core execution loop in `temporal/workflows/order_supervisor.py` handles thre
    - Evaluates initial order context, logs the genesis audit note, initializes rolling memory, and schedules the first sleep cycle.
 
 2. **Incoming Signals (`EVENT_SIGNAL` / `MANUAL_INSTRUCTION`)**:
-   - External events
-     (`payment_failed`, `shipment_delayed`, `customer_message_received`)
-     are delivered via
-     `@workflow.signal(name="order_event_signal")`.
+   - External domain events (`payment_failed`, `shipment_delayed`, `customer_message_received`, `delivery_attempt_failed`) are delivered via `@workflow.signal(name="order_event_signal")`.
    - The wait condition unblocks immediately and executes triage.
 
 3. **Scheduled Wake-up (`SCHEDULED_TIMER`)**:
@@ -83,6 +81,7 @@ To prevent unnecessary LLM token consumption on routine informational pings, inc
 | `refund_requested`          | Critical      | Wake immediately             | Wake immediately              |
 | `customer_message_received` | Critical      | Wake immediately             | Wake immediately              |
 | `delivery_attempt_failed`   | Critical      | Wake immediately             | Wake immediately              |
+| `customer_not_home`         | Critical      | Wake immediately             | Wake immediately              |
 | `no_update_for_n_hours`     | Critical      | Wake immediately             | Wake immediately              |
 | `manual_instruction`        | Critical      | Wake immediately             | Wake immediately              |
 | `payment_confirmed`         | Informational | Wake (advances to packing)   | Defer to scheduled wake       |
@@ -102,7 +101,7 @@ When the workflow determines that agent inference is required, it schedules `exe
 3. **`message_logistics_team`** (`temporal/tools/logistics.py`):
    - Opens carrier escalation tickets with FedEx, UPS, or DHL for transit bottlenecks and NDR holds.
 4. **`message_customer`** (`temporal/tools/customer.py`):
-   - Sends proactive email and SMS notifications directly to the customer.
+   - Sends proactive transactional updates directly to the customer.
 5. **`create_internal_note`** (`temporal/tools/internal_note.py`):
    - Records structured operational audit entries (`logistics_incident`, `workflow_init`, `staleness_check`).
 
@@ -114,7 +113,7 @@ To ensure long-running workflows do not exceed context limits or database constr
 
 - **Order Header**: Preserves immutable identity (Order ID, customer name, total amount, currency).
 - **Key Milestones Summary**: Retains a clean chronological array of lifecycle transitions (`[payment_confirmed]`, `[shipment_delayed]`, `[delivered]`).
-- **Rolling Natural Language Narrative**: Synthesizes the cumulative state into a self-contained summary paragraph used as active context in subsequent LLM prompts.
+- **Rolling Natural Language Narrative**: Synthesizes cumulative state into a self-contained summary paragraph used as active context in subsequent LLM prompts.
 - **Action Set**: De-duplicates and stores the unique set of business actions taken.
 
 ---

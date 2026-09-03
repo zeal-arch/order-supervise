@@ -34,7 +34,7 @@ source .venv/bin/activate
 
 ### Step 2: Install Python Dependencies
 
-All necessary packages for first-time setup (FastAPI, SQLite fallback driver `aiosqlite`, Temporal SDK, fuzzing tools, and testing utilities) have already been bundled and pushed directly into `requirements.txt` to save you installation and debugging time.
+All necessary packages (FastAPI, SQLite fallback driver `aiosqlite`, Temporal SDK, fuzzing tools, and testing utilities) are listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
@@ -48,9 +48,9 @@ npm install
 cd ../..
 ```
 
-### Step 4: Seed the Database & Demo Order
+### Step 4: Seed the Database & 14 Demo Orders
 
-This initializes the database schema, default supervisor templates, and a pre-configured demo test order (`ORD-1001`):
+This initializes the database schema, default supervisor templates, and a catalog of **14 diverse demo orders** (`ORD-1001` through `ORD-1014`):
 
 ```powershell
 python database/seed.py
@@ -136,23 +136,24 @@ _Web Dashboard: http://localhost:3000_
 
 ---
 
-## 3. Simulating Events & Testing Autonomous Agent Actions
+## 3. Order Lifecycle & Simulation Testing
 
-You can simulate order lifecycle events either **via the Web UI** or **via the CLI script**, using either **Automated Mode (30s intervals)** or **Manual Mode**.
+Every order created or opened operates with **Automated Autopilot enabled by default**, advancing through the order lifecycle in 30-second intervals, while providing a dedicated **Manual Mode** for manual testing.
 
 ### Option A: Via Web UI Dashboard (Recommended for Presentations)
 
-1. Open `http://localhost:3000` in your browser and click on any order (or `ORD-1001` / `run_demo_1001`).
-2. On the right-side **Signal & Event Simulator** panel, you will see two modes:
-   - **Automated Autopilot (30s Gap)**:
-     - Click **`Auto-Play Sequence (30s)`**.
-     - The simulator will automatically progress through the complete order lifecycle (`Payment Verified` -> `Shipment Dispatched` -> `Carrier Delay` -> `Customer Inquiry` -> `Delivered`) with a 30-second delay between each event.
-     - You will see the countdown timer, live agent wakeups, tool executions, and timeline updates in real-time.
-     - You can pause anytime or click **`Skip`** to immediately trigger the next event without waiting.
-   - **Manual Single-Event Triggering**:
-     - Click any individual event button (e.g. *Payment Verified*, *Carrier Delay Alert*, *Customer Not Home*, *Delivered*).
-     - Type a custom message in the *Simulate Inbound Customer Message* box to test customer support handling.
-3. In the **Dynamic Operator Directives** tab, enter instructions like *"Prioritize speed over cost"* or *"Do not contact customer without human review"* to watch the agent adapt its tool calling dynamically.
+1. Open `http://localhost:3000` in your browser.
+2. Click on any seeded order from the list (or `ORD-1001` / `run_demo_1001`).
+3. **Automated Autopilot (Active by Default)**:
+   - The simulator automatically counts down 30 seconds between each milestone event:
+     `Payment Verified` -> `Shipment Dispatched` (30s) -> `Carrier Delay Alert` (30s) -> `Customer Inquiry` (30s) -> `Parcel Delivered` (30s).
+   - You can watch the agent wake up from Temporal sleep, run inference, execute tools, and update memory.
+   - Adjust speed between **`5s`**, **`10s`**, and **`30s`** on the fly, or click **`Skip`** to immediately advance to the next event.
+4. **Manual Verification Mode**:
+   - Click **`[ Manual ]`** at the top of the simulator panel to pause automation.
+   - Click individual event buttons (*Payment Declined*, *Customer Not Home*, *No Tracking Update*) or type a custom customer message.
+   - Click **`[ Autoplay (30s) ]`** to resume automatic progression.
+5. In the **Human Guidance** tab, enter live operator directives (e.g. *"For this order, prioritize speed over cost"*) to dynamically steer agent decisions.
 
 ---
 
@@ -165,8 +166,6 @@ You can also simulate events directly from a terminal:
 .\.venv\Scripts\Activate.ps1
 python scripts/simulate-events.py --auto --interval 30
 ```
-
-*(You can adjust `--interval 10` or `--interval 5` for faster presentations).*
 
 **2. Interactive Manual Event Selection:**
 ```powershell
@@ -194,7 +193,7 @@ To run individual test suites:
 
 ```powershell
 pytest tests/unit/test_assignment_compliance.py -v   # Event & tool compliance
-pytest tests/workflows/test_order_supervisor.py -v     # Temporal workflow tests
+pytest tests/workflows/test_order_supervisor.py -v     # Temporal workflow integration tests
 pytest tests/api/test_schemathesis.py -v              # API fuzz tests
 ```
 
@@ -202,7 +201,7 @@ pytest tests/api/test_schemathesis.py -v              # API fuzz tests
 
 ## 5. Database Reset
 
-To reset the database back to clean seeded defaults:
+To reset the database back to clean seeded defaults (all 14 demo orders):
 
 ```powershell
 python scripts/reset-db.py
