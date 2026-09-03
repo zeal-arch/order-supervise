@@ -62,9 +62,13 @@ _(Tip: If you didn't activate the `.venv`, you can run directly: `.\.venv\Script
 
 ## 2. Running the Application
 
-You can run the full stack using the automated script or across individual terminals.
+You can run the full platform using the **Automated 1-Click Launcher** (recommended) or manually across **4 separate terminal tabs**.
 
-### Option A: Automated 1-Click Launcher (Recommended)
+---
+
+### Method 1: Automated 1-Click Launcher (Recommended)
+
+This is the fastest method. It automatically manages Temporal CLI, opens port 7233, starts the API, connects the agent worker, and launches the web frontend in a single terminal.
 
 **Windows PowerShell:**
 
@@ -78,33 +82,30 @@ You can run the full stack using the automated script or across individual termi
 bash scripts/start-local.sh
 ```
 
-This single command starts:
+**What this starts:**
+1. **Temporal Dev Server** (`http://localhost:8233`, gRPC port `7233`)
+2. **FastAPI Backend & API Docs** (`http://127.0.0.1:8000/docs`)
+3. **Temporal Worker Engine** (processes AI agent tool calls and workflow decisions)
+4. **Next.js Web Frontend** (`http://localhost:3000`)
 
-1. Temporal Dev Server (`http://localhost:8233`, gRPC: `7233`)
-2. FastAPI Backend (`http://localhost:8000/docs`)
-3. Temporal Worker (processes workflow activities and agent decisions)
-4. Next.js Frontend (`http://localhost:3000`)
-
-Press `Ctrl+C` in that terminal to stop all running services.
+*(Press `Ctrl+C` in this terminal anytime to stop all 4 services cleanly).*
 
 ---
 
-### Option B: Manual Multi-Terminal Launch
+### Method 2: Manual Multi-Terminal Launch (4 Terminals)
 
-If you prefer running each service in its own terminal tab:
+If you prefer to run each service individually in its own terminal tab for debugging or inspection:
 
 #### Terminal 1: Temporal Server
-
-Activate your virtual environment (which has `temporal` ready) and start the local development server:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 temporal server start-dev --port 7233 --ui-port 8233 --ip 127.0.0.1
 ```
 
-*(Note: If `temporal` is not yet in `.venv\Scripts`, running `.\scripts\start-local.ps1` automatically downloads and configures it for you. You can also download `temporal.exe` directly from [Temporal GitHub Releases](https://github.com/temporalio/cli/releases/latest) and place it into `.venv\Scripts`).*
+*(Note: If `temporal` is not yet on your machine, simply run `.\scripts\start-local.ps1` once to let it auto-install, or download `temporal.exe` from [Temporal GitHub Releases](https://github.com/temporalio/cli/releases/latest) into `.venv\Scripts`).*
 
-_Web Console: http://localhost:8233_
+_Temporal Web Console: http://localhost:8233_
 
 #### Terminal 2: FastAPI Backend Server
 
@@ -113,18 +114,18 @@ _Web Console: http://localhost:8233_
 uvicorn apps.api.app.main:app --port 8000 --host 127.0.0.1 --reload
 ```
 
-_Swagger API Docs: http://127.0.0.1:8000/docs_
+_Interactive Swagger Docs: http://127.0.0.1:8000/docs_
 
-#### Terminal 3: Temporal Worker
+#### Terminal 3: Temporal Worker Engine
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 python -m temporal.worker
 ```
 
-_Listens for workflow tasks on queue `order-supervisor-task-queue`._
+_Listens for workflow tasks and executes agent decisions on queue `order-supervisor-task-queue`._
 
-#### Terminal 4: Next.js Frontend
+#### Terminal 4: Next.js Frontend UI
 
 ```powershell
 cd apps/web
