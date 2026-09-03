@@ -1,0 +1,10 @@
+{
+  "include": [
+    "."
+  ],
+  "extraPaths": [
+    ".",
+    ".venv/Lib/site-packages",
+    "d:/projects/sagapilot/order-supervisor/.venv/Lib/site-packages"
+  ]
+}

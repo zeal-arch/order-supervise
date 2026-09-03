@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Runs, Events, Timeline, and Supervisor configs
+  postgres:
+    image: postgres:16-alpine
+    container_name: order_supervisor_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_supervisor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Temporal Dev Server (includes Web UI and gRPC server in one lightweight container)
+  temporal:
+    image: temporalio/dev-server:latest
+    container_name: order_supervisor_temporal
+    restart: always
+    command: ["--ip", "0.0.0.0", "--headless=false"]
+    ports:
+      - "7233:7233"  # Temporal gRPC server
+      - "8233:8233"  # Temporal Web UI
+    volumes:
+      - temporal_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  temporal_data:
