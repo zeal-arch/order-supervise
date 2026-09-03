@@ -43,8 +43,8 @@ class TemporalService:
         return handle.id
 
     @staticmethod
-    async def send_event_signal(workflow_id: str, event_data: dict[str, Any]) -> None:
-        """Sends an incoming event signal to the running workflow."""
+    async def send_event_signal(workflow_id: str, event_data: dict[str, Any], run_model: Any = None) -> None:
+        """Sends an incoming event signal to the running workflow, auto-starting if needed."""
         client = await get_temporal_client()
         handle = client.get_workflow_handle(workflow_id)
         payload = OrderEventSignalPayload(
@@ -54,12 +54,38 @@ class TemporalService:
             source=event_data.get("source", "simulator"),
             timestamp=event_data.get("timestamp"),
         )
-        await handle.signal("order_event_signal", payload)
-        logger.info(f"Sent order_event_signal to workflow {workflow_id}")
+        try:
+            await handle.signal("order_event_signal", payload)
+            logger.info(f"Sent order_event_signal to workflow {workflow_id}")
+        except Exception as e:
+            logger.warning(f"Could not signal workflow {workflow_id} directly ({e}). Attempting auto-start...")
+            if run_model:
+                try:
+                    await client.start_workflow(
+                        "OrderSupervisorWorkflow",
+                        {
+                            "run_id": run_model.id,
+                            "order_id": run_model.order_id,
+                            "supervisor_config": {},
+                            "order_context": run_model.order_context or {},
+                            "initial_instructions": [
+                                i.get("instruction", "") if isinstance(i, dict) else str(i)
+                                for i in (run_model.additional_instructions or [])
+                            ],
+                        },
+                        id=workflow_id,
+                        task_queue=settings.TEMPORAL_TASK_QUEUE,
+                    )
+                    await handle.signal("order_event_signal", payload)
+                    logger.info(f"Auto-started and signaled workflow {workflow_id}")
+                except Exception as start_err:
+                    logger.error(f"Failed to auto-start workflow for signal: {start_err}")
+            else:
+                raise
 
     @staticmethod
-    async def send_instruction_signal(workflow_id: str, instruction_data: dict[str, Any]) -> None:
-        """Sends a runtime instruction signal to the running workflow."""
+    async def send_instruction_signal(workflow_id: str, instruction_data: dict[str, Any], run_model: Any = None) -> None:
+        """Sends a runtime instruction signal to the running workflow, auto-starting if needed."""
         client = await get_temporal_client()
         handle = client.get_workflow_handle(workflow_id)
         payload = InstructionSignalPayload(
@@ -67,8 +93,34 @@ class TemporalService:
             author=instruction_data.get("author", "operator"),
             timestamp=instruction_data.get("timestamp"),
         )
-        await handle.signal("instruction_signal", payload)
-        logger.info(f"Sent instruction_signal to workflow {workflow_id}")
+        try:
+            await handle.signal("instruction_signal", payload)
+            logger.info(f"Sent instruction_signal to workflow {workflow_id}")
+        except Exception as e:
+            logger.warning(f"Could not signal workflow {workflow_id} directly ({e}). Attempting auto-start...")
+            if run_model:
+                try:
+                    await client.start_workflow(
+                        "OrderSupervisorWorkflow",
+                        {
+                            "run_id": run_model.id,
+                            "order_id": run_model.order_id,
+                            "supervisor_config": {},
+                            "order_context": run_model.order_context or {},
+                            "initial_instructions": [
+                                i.get("instruction", "") if isinstance(i, dict) else str(i)
+                                for i in (run_model.additional_instructions or [])
+                            ],
+                        },
+                        id=workflow_id,
+                        task_queue=settings.TEMPORAL_TASK_QUEUE,
+                    )
+                    await handle.signal("instruction_signal", payload)
+                    logger.info(f"Auto-started and signaled workflow {workflow_id}")
+                except Exception as start_err:
+                    logger.error(f"Failed to auto-start workflow for instruction: {start_err}")
+            else:
+                raise
 
     @staticmethod
     async def send_pause_signal(workflow_id: str) -> None:

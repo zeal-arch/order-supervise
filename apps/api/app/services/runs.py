@@ -177,6 +177,7 @@ class RunService:
                     "source": event.source,
                     "timestamp": event.created_at.isoformat(),
                 },
+                run_model=run,
             )
         except Exception as e:
             print(f"Warning: Temporal signal sending failed: {e}")
@@ -206,6 +207,7 @@ class RunService:
             await TemporalService.send_instruction_signal(
                 workflow_id=run.workflow_id,
                 instruction_data=instruction_payload,
+                run_model=run,
             )
         except Exception as e:
             print(f"Warning: Temporal instruction signal failed: {e}")
