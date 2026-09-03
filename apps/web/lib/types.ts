@@ -13,9 +13,12 @@ export type EventType =
   | "payment_failed"
   | "shipment_created"
   | "shipment_delayed"
+  | "delivery_attempt_failed"
+  | "customer_not_home"
   | "delivered"
   | "refund_requested"
   | "customer_message_received"
+  | "no_update_for_n_hours"
   | "manual_instruction"
   | "custom_event";
 

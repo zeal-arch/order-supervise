@@ -28,6 +28,8 @@ class EventType(str, Enum):
     PAYMENT_FAILED = "payment_failed"
     SHIPMENT_CREATED = "shipment_created"
     SHIPMENT_DELAYED = "shipment_delayed"
+    DELIVERY_ATTEMPT_FAILED = "delivery_attempt_failed"
+    CUSTOMER_NOT_HOME = "customer_not_home"
     DELIVERED = "delivered"
     REFUND_REQUESTED = "refund_requested"
     CUSTOMER_MESSAGE_RECEIVED = "customer_message_received"
