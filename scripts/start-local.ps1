@@ -10,9 +10,31 @@ Write-Host "======================================================" -ForegroundC
 
 # 1. Temporal Server
 Write-Host "[1/4] Starting Temporal Server on port 7233..." -ForegroundColor Yellow
-$TemporalProc = Start-Process -FilePath ".\.venv\Scripts\temporal.exe" `
-    -ArgumentList "server", "start-dev", "--port", "7233", "--ui-port", "8233", "--ip", "127.0.0.1" `
-    -PassThru -NoNewWindow
+
+$TemporalCmd = $null
+if (Test-Path ".\.venv\Scripts\temporal.exe") {
+    $TemporalCmd = ".\.venv\Scripts\temporal.exe"
+} elseif (Get-Command "temporal" -ErrorAction SilentlyContinue) {
+    $TemporalCmd = "temporal"
+} elseif (Get-Command "temporal.exe" -ErrorAction SilentlyContinue) {
+    $TemporalCmd = "temporal.exe"
+}
+
+$TemporalProc = $null
+if ($TemporalCmd) {
+    $TemporalProc = Start-Process -FilePath $TemporalCmd `
+        -ArgumentList "server", "start-dev", "--port", "7233", "--ui-port", "8233", "--ip", "127.0.0.1" `
+        -PassThru -NoNewWindow
+} else {
+    Write-Host "[!] Temporal CLI binary not found on PATH or in .venv\Scripts." -ForegroundColor Red
+    Write-Host "    Attempting to start Temporal via Docker Compose..." -ForegroundColor Yellow
+    docker-compose up -d temporal 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[!] Could not start Temporal automatically." -ForegroundColor Red
+        Write-Host "    Install Temporal CLI: irm https://temporal.download/cli.ps1 | iex" -ForegroundColor Cyan
+        Write-Host "    Or start with Docker: docker-compose up -d" -ForegroundColor Cyan
+    }
+}
 
 Start-Sleep -Seconds 2
 
