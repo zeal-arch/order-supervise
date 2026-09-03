@@ -13,9 +13,14 @@ Open PowerShell or your terminal in the cloned repository root folder:
 **Windows PowerShell:**
 
 ```powershell
+# 1. Create the virtual environment
 python -m venv .venv
+
+# 2. Activate the virtual environment
 .\.venv\Scripts\Activate.ps1
 ```
+
+*(Once activated, your terminal prompt will show `(.venv) PS D:\projects\...>`)*
 
 **macOS / Linux / Git Bash:**
 
@@ -24,7 +29,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-> **Note for Windows users**: If PowerShell shows an execution policy error, run:
+> **Note for Windows users**: If PowerShell blocks script activation with an execution policy error, run:
 > `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
 
 ### Step 2: Install Python Dependencies
@@ -47,9 +52,11 @@ cd ../..
 
 This initializes the database schema, default supervisor templates, and a pre-configured demo test order (`ORD-1001`):
 
-```bash
+```powershell
 python database/seed.py
 ```
+
+*(Tip: If you didn't activate the `.venv`, you can run directly: `.\.venv\Scripts\python.exe database/seed.py`)*
 
 ---
 
