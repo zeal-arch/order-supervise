@@ -18,6 +18,28 @@ if (Test-Path ".\.venv\Scripts\temporal.exe") {
     $TemporalCmd = "temporal"
 } elseif (Get-Command "temporal.exe" -ErrorAction SilentlyContinue) {
     $TemporalCmd = "temporal.exe"
+} else {
+    Write-Host "    Temporal CLI not found. Auto-downloading standalone Temporal server..." -ForegroundColor Cyan
+    try {
+        $DownloadUrl = "https://temporal.download/cli/archive/latest?platform=windows&arch=amd64"
+        $TempZip = Join-Path $env:TEMP "temporal_cli.zip"
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $TempZip -UseBasicParsing
+        $TargetDir = Join-Path $Root ".venv\Scripts"
+        if (-not (Test-Path $TargetDir)) {
+            New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+        }
+        Expand-Archive -Path $TempZip -DestinationPath $TargetDir -Force
+        Remove-Item $TempZip -Force -ErrorAction SilentlyContinue
+
+        if (Test-Path ".\.venv\Scripts\temporal.exe") {
+            $TemporalCmd = ".\.venv\Scripts\temporal.exe"
+            Write-Host "    [✓] Temporal CLI auto-installed to .venv\Scripts\temporal.exe" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "    [!] Auto-download failed ($($_.Exception.Message)). Attempting Docker fallback..." -ForegroundColor Yellow
+        docker-compose up -d temporal 2>$null | Out-Null
+    }
 }
 
 $TemporalProc = $null
@@ -25,18 +47,23 @@ if ($TemporalCmd) {
     $TemporalProc = Start-Process -FilePath $TemporalCmd `
         -ArgumentList "server", "start-dev", "--port", "7233", "--ui-port", "8233", "--ip", "127.0.0.1" `
         -PassThru -NoNewWindow
-} else {
-    Write-Host "[!] Temporal CLI binary not found on PATH or in .venv\Scripts." -ForegroundColor Red
-    Write-Host "    Attempting to start Temporal via Docker Compose..." -ForegroundColor Yellow
-    docker-compose up -d temporal 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[!] Could not start Temporal automatically." -ForegroundColor Red
-        Write-Host "    Install Temporal CLI: irm https://temporal.download/cli.ps1 | iex" -ForegroundColor Cyan
-        Write-Host "    Or start with Docker: docker-compose up -d" -ForegroundColor Cyan
-    }
 }
 
-Start-Sleep -Seconds 2
+# Wait for Temporal Server port 7233 to open (up to 15 seconds)
+for ($i = 0; $i -lt 30; $i++) {
+    try {
+        $TcpClient = New-Object System.Net.Sockets.TcpClient
+        $AsyncResult = $TcpClient.BeginConnect("127.0.0.1", 7233, $null, $null)
+        $Success = $AsyncResult.AsyncWaitHandle.WaitOne(300)
+        if ($Success -and $TcpClient.Connected) {
+            $TcpClient.EndConnect($AsyncResult)
+            $TcpClient.Close()
+            break
+        }
+        $TcpClient.Close()
+    } catch {}
+    Start-Sleep -Milliseconds 500
+}
 
 # 2. FastAPI Backend
 Write-Host "[2/4] Starting FastAPI Backend on http://127.0.0.1:8000..." -ForegroundColor Yellow
@@ -75,7 +102,7 @@ finally {
     if ($WorkerProc) { Stop-Process -Id $WorkerProc.Id -Force -ErrorAction SilentlyContinue }
     if ($WebProc) { Stop-Process -Id $WebProc.Id -Force -ErrorAction SilentlyContinue }
     
-    # Also clean up any node/uvicorn subprocesses on standard ports
+    # Also clean up any node/uvicorn/temporal subprocesses
     Get-Process -Name "temporal", "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Write-Host "All services stopped cleanly." -ForegroundColor Green
 }
