@@ -34,7 +34,7 @@ if (Test-Path ".\.venv\Scripts\temporal.exe") {
 
         if (Test-Path ".\.venv\Scripts\temporal.exe") {
             $TemporalCmd = ".\.venv\Scripts\temporal.exe"
-            Write-Host "    [✓] Temporal CLI auto-installed to .venv\Scripts\temporal.exe" -ForegroundColor Green
+            Write-Host "    [OK] Temporal CLI auto-installed to .venv\Scripts\temporal.exe" -ForegroundColor Green
         }
     } catch {
         Write-Host "    [!] Auto-download failed ($($_.Exception.Message)). Attempting Docker fallback..." -ForegroundColor Yellow
