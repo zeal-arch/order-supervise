@@ -80,3 +80,6 @@ Thumbs.db
 # Folder for AI
 .docs_for_ai/
 
+# Internal Notes
+docs/demo-script.md
+
