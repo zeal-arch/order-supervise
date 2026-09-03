@@ -20,7 +20,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-*(Once activated, your terminal prompt will show `(.venv) PS D:\projects\...>`)*
+_(Once activated, your terminal prompt will show `(.venv) PS D:\projects\...>`)_
 
 **macOS / Linux / Git Bash:**
 
@@ -56,7 +56,7 @@ This initializes the database schema, default supervisor templates, and a pre-co
 python database/seed.py
 ```
 
-*(Tip: If you didn't activate the `.venv`, you can run directly: `.\.venv\Scripts\python.exe database/seed.py`)*
+_(Tip: If you didn't activate the `.venv`, you can run directly: `.\.venv\Scripts\python.exe database/seed.py`)_
 
 ---
 
@@ -95,16 +95,16 @@ If you prefer running each service in its own terminal tab:
 
 #### Terminal 1: Temporal Server
 
-Using Docker:
-
-```bash
-docker-compose up -d
-```
-
-_Or using the local Temporal CLI binary:_
+**remember to activate '.\.venv\Scripts\Activate.ps1'**
 
 ```powershell
 temporal server start-dev --port 7233 --ui-port 8233 --ip 127.0.0.1
+```
+
+_Or using docker compose:_
+
+```bash
+docker-compose up -d
 ```
 
 _Web Console: http://localhost:8233_
