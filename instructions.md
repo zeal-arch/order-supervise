@@ -2,112 +2,141 @@
 
 ---
 
-## The Golden Rule: Working Directory
+## 1. First-Time Installation (Run Once After Cloning)
 
-Every single command must be run from the **`order-supervisor` root directory**.
+When you clone the repository for the first time, follow these steps to set up the Python environment, install all dependencies, and seed the initial database.
 
-Before running any command, make sure your terminal shows:
+Open PowerShell or your terminal in the cloned repository root folder:
+
+### Step 1: Create and Activate Python Virtual Environment
+**Windows PowerShell:**
 ```powershell
-PS D:\projects\sagapilot\order-supervisor>
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-If you are currently inside `.venv` or any subfolder, jump back to root:
-```powershell
-cd D:\projects\sagapilot\order-supervisor
+**macOS / Linux / Git Bash:**
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+> **Note for Windows users**: If PowerShell shows an execution policy error, run:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
+
+### Step 2: Install Python Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### Step 3: Install Frontend Dependencies
+```bash
+cd apps/web
+npm install
+cd ../..
+```
+
+### Step 4: Seed the Database & Demo Order
+This initializes the database schema, default supervisor templates, and a pre-configured demo test order (`ORD-1001`):
+```bash
+python database/seed.py
 ```
 
 ---
 
-## Quick Start (Automated 1-Click)
+## 2. Running the Application
 
-The simplest way to run all 4 services inside your VS Code terminal (no external windows):
+You can run the full stack using the automated script or across individual terminals.
 
-### In Windows PowerShell:
+### Option A: Automated 1-Click Launcher (Recommended)
+
+**Windows PowerShell:**
 ```powershell
 .\scripts\start-local.ps1
 ```
 
-### In Git Bash / Linux / macOS:
+**macOS / Linux / Git Bash:**
 ```bash
 bash scripts/start-local.sh
 ```
 
-*This starts Temporal Server, FastAPI Backend, Temporal Worker, and Next.js Frontend in the background. Press `Ctrl+C` in that terminal at any time to stop all services.*
+This single command starts:
+1. Temporal Dev Server (`http://localhost:8233`, gRPC: `7233`)
+2. FastAPI Backend (`http://localhost:8000/docs`)
+3. Temporal Worker (processes workflow activities and agent decisions)
+4. Next.js Frontend (`http://localhost:3000`)
+
+Press `Ctrl+C` in that terminal to stop all running services.
 
 ---
 
-## Manual Step-by-Step Guide (If Running in 4 Separate Terminals)
+### Option B: Manual Multi-Terminal Launch
 
-If you prefer running each service in its own terminal tab, open 4 terminal tabs in **`D:\projects\sagapilot\order-supervisor`**:
+If you prefer running each service in its own terminal tab:
 
-### Terminal 1: Temporal Server
+#### Terminal 1: Temporal Server
+Using Docker:
+```bash
+docker-compose up -d
+```
+*Or using the local Temporal CLI binary:*
 ```powershell
-# 1. Ensure you are at root:
-cd D:\projects\sagapilot\order-supervisor
-
-# 2. Start Temporal:
-.\.venv\Scripts\temporal.exe server start-dev --port 7233 --ui-port 8233 --ip 127.0.0.1
+temporal server start-dev --port 7233 --ui-port 8233 --ip 127.0.0.1
 ```
 *Web Console: http://localhost:8233*
 
----
-
-### Terminal 2: FastAPI Backend Server
+#### Terminal 2: FastAPI Backend Server
 ```powershell
-# 1. Ensure you are at root:
-cd D:\projects\sagapilot\order-supervisor
-
-# 2. Activate environment:
 .\.venv\Scripts\Activate.ps1
-
-# 3. Start Backend:
 uvicorn apps.api.app.main:app --port 8000 --host 127.0.0.1 --reload
 ```
 *Swagger API Docs: http://127.0.0.1:8000/docs*
 
----
-
-### Terminal 3: Temporal Worker
+#### Terminal 3: Temporal Worker
 ```powershell
-# 1. Ensure you are at root:
-cd D:\projects\sagapilot\order-supervisor
-
-# 2. Activate environment:
 .\.venv\Scripts\Activate.ps1
-
-# 3. Start Worker:
 python -m temporal.worker
 ```
-*Listens for workflow execution tasks on queue `order-supervisor-task-queue`.*
+*Listens for workflow tasks on queue `order-supervisor-task-queue`.*
 
----
-
-### Terminal 4: Next.js Frontend Web UI
+#### Terminal 4: Next.js Frontend
 ```powershell
-# 1. Navigate to apps/web:
-cd D:\projects\sagapilot\order-supervisor\apps\web
-
-# 2. Start Frontend:
+cd apps/web
 npm run dev
 ```
-*Frontend Application: http://localhost:3000*
+*Web Dashboard: http://localhost:3000*
 
 ---
 
-## How to Reset the Database to a Clean Slate (0 Orders)
+## 3. Demo Order & Verification
+
+1. Open `http://localhost:3000` in your browser.
+2. Visit `http://localhost:3000/runs/run_demo_1001` to view the seeded test order (`ORD-1001`, Sarah Connor).
+3. Use the **Event Generator & Simulator** panel on the right to inject events (e.g. `payment_confirmed`, `shipment_delayed`, `delivered`).
+4. Type live instructions (e.g. *"Prioritize speed over cost"*) in the **Dynamic Operator Directives** box and click Apply.
+
+---
+
+## 4. Running Tests
+
+To run the full automated test suite (32 tests):
 ```powershell
-cd D:\projects\sagapilot\order-supervisor
-.\.venv\Scripts\python.exe scripts/reset-db.py
+.\.venv\Scripts\Activate.ps1
+pytest tests
 ```
-*This wipes all previous test runs and initializes fresh supervisor templates with 0 demo orders.*
+
+To run individual test suites:
+```powershell
+pytest tests/unit/test_assignment_compliance.py -v   # Event & tool compliance
+pytest tests/workflows/test_order_supervisor.py -v     # Temporal workflow tests
+pytest tests/api/test_schemathesis.py -v              # API fuzz tests
+```
 
 ---
 
-## Common Mistakes and How to Avoid Them
+## 5. Database Reset
 
-| Error | Why It Happened | Solution |
-| :--- | :--- | :--- |
-| `can't open file ... No such file or directory` | Your terminal is inside `.venv` or a subfolder. | Type `cd D:\projects\sagapilot\order-supervisor` first. |
-| `The term 'temporal.exe' is not recognized` | Path is wrong because you are not in the root directory. | Type `cd D:\projects\sagapilot\order-supervisor` first. |
-| `No module named 'apps'` | Running from `.venv/Scripts` instead of the project root. | Always run from `order-supervisor/`. |
-| `No module named 'sqlalchemy'` | Running without activating the virtual environment. | Run `.\.venv\Scripts\Activate.ps1` before running `python` or `uvicorn`. |
+To reset the database back to clean seeded defaults:
+```powershell
+python scripts/reset-db.py
+```
