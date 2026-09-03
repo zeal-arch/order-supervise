@@ -364,48 +364,11 @@ export function EventInjector({
 
   return (
     <div className="p-5 rounded-[16px] bg-[#202020] border border-[#333333] space-y-4">
-      {/* Header & Mode Switcher */}
+      {/* Header */}
       <div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-sm text-white tracking-tight">Signal & Event Simulator</h3>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-[4px] font-mono font-bold uppercase tracking-wider ${
-                isAutoplayRunning
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-white/10 text-white border border-white/20"
-              }`}
-            >
-              {isAutoplayRunning ? "AUTOPLAY (30s)" : "MANUAL MODE"}
-            </span>
-          </div>
-
-          {/* Quick Manual / Autoplay Mode Toggle Button */}
-          {isAutoplayRunning ? (
-            <button
-              type="button"
-              onClick={switchToManualMode}
-              className="px-2.5 py-1 rounded-[6px] bg-[#141414] hover:bg-[#282828] text-white text-xs font-semibold border border-[#3a3a3a] transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
-              title="Pause automation and switch to manual verification"
-            >
-              <span>Manual</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={resumeAutopilot}
-              disabled={!nextAutoplayPreset}
-              className="px-2.5 py-1 rounded-[6px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
-              title="Resume automatic 30s event progression"
-            >
-              <span>Autoplay (30s)</span>
-            </button>
-          )}
-        </div>
+        <h3 className="font-semibold text-sm text-white tracking-tight">Signal & Event Simulator</h3>
         <p className="text-xs text-[#a0a0a0] mt-0.5">
-          {isAutoplayRunning
-            ? "Autopilot is advancing the order through all milestone events with a 30s gap."
-            : "Manual mode enabled. Trigger events or type custom messages below."}
+          Trigger domain events or observe automated milestone progression.
         </p>
       </div>
 
@@ -476,7 +439,7 @@ export function EventInjector({
                   className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-[#1a1a1a] text-white border border-[#333333] hover:bg-[#282828] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Pause className="w-3 h-3" />
-                  <span>Pause (Manual Mode)</span>
+                  <span>Pause (Manual)</span>
                 </button>
               ) : (
                 <button
@@ -485,7 +448,7 @@ export function EventInjector({
                   className="flex-1 py-1.5 px-3 rounded-[6px] text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Play className="w-3 h-3 fill-current" />
-                  <span>Resume Autoplay ({autoplayIntervalSeconds}s)</span>
+                  <span>Resume Autopilot</span>
                 </button>
               )}
 
