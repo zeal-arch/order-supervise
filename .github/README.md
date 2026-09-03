@@ -1,241 +1,183 @@
-# Order Supervisor AI Agent Platform
+# Order Supervisor
 
-> Long-running AI supervisor that oversees e-commerce orders from creation to completion, orchestrated with **Temporal** workflows, **FastAPI**, **PostgreSQL**, and **Next.js (App Router + Tailwind CSS)**.
+A long-running order supervision system built with Temporal, FastAPI, and Next.js. Each order runs as an isolated Temporal workflow that reacts to external events (payment confirmations, carrier tracking, delays), executes business actions through tool activities, maintains state memory, and sleeps when inactive.
 
 ---
 
-## 📸 Product Showcase
+## Interface & Workflow Run
 
-### 1. Live Order Control Room & Event Simulator
-Supervise order lifecycles in real-time with milestone progress tracking, an active event stream, and a one-click event injector.
+### Order Run View & Event Simulator
+Tracks live order milestones, tool execution logs, and incoming event stream with interactive event simulation.
 
 ![Order Control Room](public/order-run-dashboard.png)
 
-### 2. Live Agent Memory Context & Dynamic Operator Directives
-Inspect auto-compacting memory, cumulative milestone history, and inject mid-flight human guidance (e.g. *"Prioritize speed over cost"*).
+### Agent Memory & Operator Directives
+Sliding-window memory summary, milestone history, and manual instruction injection to adjust agent behavior mid-flight.
 
 ![AI Memory and Live Operator Guidance](public/live-activity-and-memory.png)
 
-### 3. Supervisor Configuration & Wake Policy Sensitivity
-Define custom AI templates, adjust classifier wake sensitivity (Conservative, Balanced, Aggressive), set sleep intervals, and toggle enabled tools.
+### Supervisor Configuration
+Configurable supervisor profiles with customizable wake sensitivity, sleep intervals, model selection, and tool permissions.
 
 ![Supervisor Configuration Profiles](public/supervisor-config-templates.png)
 
-### 4. Temporal Long-Running Deterministic Workflow
-Zero compute/token waste during dormant intervals with Temporal timers, activities, and signal handling.
+### Temporal Workflow Execution
+Long-running workflow execution showing timer-based sleep cycles, signal triggers, and activity dispatches.
 
 ![Temporal Workflow Timeline](public/temporal-workflow-timeline.png)
 
 ---
 
-## 🎯 Test Subject & Instant Showcase Order
+## Demo Order (ORD-1001)
 
-The repository includes a ready-to-inspect test subject order seeded directly into the database:
+The database seed includes a sample order to test out of the box:
 
 - **Order ID**: `ORD-1001`
 - **Customer**: Sarah Connor (`sarah@cyberdyne.io`)
-- **Product**: Ergonomic Split Mechanical Keyboard ($499.00)
-- **Active Supervisor**: `VIP & High-Value Order Supervisor` (Aggressive wake mode)
-- **Active Human Directive**: *"For this order, prioritize speed over cost."*
-- **Current State**: `SLEEPING` (awaiting courier pickup scan after verifying payment and alerting warehouse with rush priority)
+- **Item**: Ergonomic Split Mechanical Keyboard ($499.00)
+- **Profile**: `VIP & High-Value Order Supervisor`
+- **Active Directive**: "For this order, prioritize speed over cost."
+- **Status**: `SLEEPING` (awaiting carrier tracking scan after payment verification)
 
-To view the test subject, simply start the app and visit:
-```
-http://localhost:3000/runs/run_demo_1001
-```
+To view it after starting the stack, open `http://localhost:3000/runs/run_demo_1001`.
 
 ---
 
-## Key Capabilities & Architectural Highlights
+## Core Mechanics
 
-- **1 Workflow Run per Order**: Long-running lifecycle management powered by the `temporalio` Python SDK.
-- **Event-Driven Wake/Sleep Cycle**: The AI does not run in an expensive polling loop. It sleeps using Temporal timers and only wakes on:
-  1. **Workflow Start** (Initialization)
-  2. **Incoming Signals/Events** (via a lightweight Classifier Policy)
-  3. **Scheduled Wake-up Timers**
-- **Two-Tier Event Classifier**: Evaluates incoming signals (`payment_failed`, `shipment_delayed`, `customer_message_received`, etc.) and determines whether immediate agent inference is required or if the workflow should remain asleep.
-- **5 Business Tool Actions**:
-  - `message_fulfillment_team`
-  - `message_payments_team`
-  - `message_logistics_team`
-  - `message_customer`
-  - `create_internal_note`
-- **Context Compaction & Rolling Memory**: Synthesizes cumulative order history into a compact rolling summary to prevent context bloat.
-- **Mid-Flight Operator Steering**: Inject dynamic instructions (e.g. _"Prioritize speed over cost"_) into active workflows via Temporal signals.
-- **Interactive Event Simulator**: One-click simulation of order events and carrier delays from the web dashboard.
-- **Post-Mortem & Completion**: Generates final executive summaries, key learnings, and feedback recommendations upon terminal completion (`delivered`, `cancelled`, or `terminated`).
+- **One Workflow per Order**: Orders are modeled as long-running Temporal workflows that persist until delivery, cancellation, or manual termination.
+- **Event-Driven Wake/Sleep**: The workflow sleeps via Temporal timers (`wait_condition`). It only wakes when:
+  1. The workflow first initializes
+  2. An incoming signal is received (filtered through a wake policy classifier)
+  3. A scheduled timer fires
+- **Wake Policy Classifier**: A lightweight activity evaluates event priority against the supervisor's sensitivity setting (Conservative, Balanced, Aggressive) to decide whether to trigger immediate agent evaluation or remain asleep.
+- **Business Tools**:
+  - `message_fulfillment_team`: Warehouse packing and dispatch alerts.
+  - `message_payments_team`: Billing alerts, payment failures, and refunds.
+  - `message_logistics_team`: Courier inquiries and carrier tickets.
+  - `message_customer`: Customer transactional emails and delay updates.
+  - `create_internal_note`: Audit notes and human review flags.
+- **Dynamic Directives**: Operators can signal runtime instructions (e.g., "Do not contact customer without human review") that modulate tool behavior.
+- **Terminal Post-Mortem**: When an order reaches completion (`delivered` or `refund_requested`), the agent outputs a summary, actions taken, key learnings, and operational recommendations.
 
 ---
 
-## 🏗️ Repository Architecture
+## Project Structure
 
 ```text
 order-supervisor/
-│
 ├── apps/
-│   ├── web/                              # Next.js 14 App Router + Tailwind CSS UI
-│   │   ├── app/
-│   │   │   ├── page.tsx                  # Live Dashboard
-│   │   │   ├── runs/                     # Runs catalog & detailed control rooms
-│   │   │   └── supervisors/              # Supervisor template manager
-│   │   ├── components/runs/              # Timeline, ActivityLog, Memory, EventInjector, Controls
-│   │   └── lib/                          # API client, TypeScript types, utils
-│   │
-│   └── api/                              # FastAPI Backend & Control Plane
-│       └── app/
-│           ├── main.py                   # App entrypoint, CORS, lifespan
-│           ├── api/routes/               # supervisors, runs, events, instructions
-│           ├── models/                   # SQLAlchemy DB entities
-│           ├── schemas/                  # Pydantic request/response schemas
-│           ├── services/                 # Temporal client wrapper & run services
-│           └── db/                       # Database engine & fallback
-│
-├── temporal/                             # Temporal Engine
-│   ├── workflows/
-│   │   ├── order_supervisor.py           # Long-running OrderSupervisorWorkflow
-│   │   ├── state.py                      # Deterministic workflow state
-│   │   └── signals.py                    # Temporal signals & payloads
-│   ├── activities/
-│   │   ├── wake_policy.py                # Classifier activity (wake vs sleep)
-│   │   ├── agent.py                      # Cognitive decision activity & tool selector
-│   │   ├── memory.py                     # Memory compaction activity
-│   │   └── persistence.py                # Activity & state DB sync
-│   ├── tools/                            # 5 Business Action activities
-│   │   ├── fulfillment.py
-│   │   ├── payments.py
-│   │   ├── logistics.py
-│   │   ├── customer.py
-│   │   └── internal_note.py
-│   ├── worker.py                         # Temporal worker process
-│   └── client.py                         # Temporal client connection
-│
-├── domain/                               # Shared Domain Enums & Schemas
-│   ├── enums.py                          # OrderStatus, EventType, ActivityType, WakeReason
-│   ├── models.py                         # OrderContext, OrderItem
-│   └── memory.py                         # OrderCompactMemory
-│
-├── database/
-│   ├── migrations/001_initial.sql        # PostgreSQL schema
-│   └── seed.py                           # Seed default supervisors and sample orders
-│
+│   ├── web/                    # Next.js 14 frontend (App Router, Tailwind CSS)
+│   │   ├── app/                # Pages: dashboard, runs, supervisor profiles
+│   │   └── components/runs/    # Feed, timeline, controls, simulator
+│   └── api/                    # FastAPI backend
+│       ├── app/api/routes/     # REST endpoints for runs and supervisors
+│       ├── app/models/         # SQLAlchemy models (runs, events, activities)
+│       └── app/services/       # Temporal client wrapper and orchestration logic
+├── temporal/
+│   ├── workflows/              # OrderSupervisorWorkflow implementation & state
+│   ├── activities/             # Agent evaluation, wake classifier, memory compaction
+│   └── tools/                  # Business action tool activities
+├── domain/                     # Shared models, enums, and schemas
+├── database/                   # Seed script and initial SQL migrations
 ├── tests/
-│   ├── api/                              # REST API and Schemathesis fuzzing tests
-│   ├── unit/                             # Unit tests for wake policy, memory, and tools
-│   └── workflows/                        # Temporal workflow integration tests
-│
-├── scripts/
-│   ├── simulate-events.py                # CLI Event Injector
-│   └── reset-db.py                       # Clean Database Reset script
-│
-├── docs/
-│   ├── architecture.md                   # Detailed architecture note
-│   └── demo-script.md                    # Walkthrough video presentation script
-│
-├── docker-compose.yml                    # PostgreSQL + Temporal Dev Server + Web UI
-└── Makefile                              # Convenient developer targets
+│   ├── unit/                   # Wake policy, memory compaction, and tool tests
+│   ├── workflows/              # End-to-end Temporal workflow integration tests
+│   └── api/                    # REST API tests and Schemathesis property fuzzing
+└── scripts/                    # Event injection CLI and local launch helpers
 ```
 
 ---
 
-## 🚀 Quickstart & Local Setup
+## Setup & Running Locally
 
-### 1. Prerequisites
-
+### Requirements
 - Python 3.11+
 - Node.js 18+ and npm
-- Docker & Docker Compose
+- Docker and Docker Compose
 
-### 2. Start Infrastructure (PostgreSQL + Temporal)
-
+### 1. Start Infrastructure
+Start PostgreSQL and the Temporal development server:
 ```bash
-# Start PostgreSQL (port 5432) and Temporal Dev Server (gRPC: 7233, Web UI: 8233)
 docker-compose up -d
 ```
+The Temporal Web UI is accessible at `http://localhost:8233`.
 
-> _Temporal Web UI is accessible at [http://localhost:8233](http://localhost:8233)_
-
-### 3. Initialize Python Environment & Seed Database
-
+### 2. Backend & Worker Setup
+Install Python dependencies and seed supervisor profiles and demo data:
 ```bash
-# In project root:
 python -m venv .venv
-.\.venv\Scripts\activate       # Windows PowerShell
-# or source .venv/bin/activate # macOS/Linux
+.\.venv\Scripts\activate       # On Windows PowerShell
+# source .venv/bin/activate    # On Linux/macOS
 
 pip install -r requirements.txt
-
-# Seed default supervisor templates and demo runs
 python database/seed.py
 ```
 
-### 4. Start the Temporal Worker
-
+Start the Temporal worker:
 ```bash
 python -m temporal.worker
 ```
 
-### 5. Start the FastAPI Backend
-
+In a separate terminal, start the FastAPI server:
 ```bash
 uvicorn apps.api.app.main:app --reload --port 8000
 ```
+Swagger API docs are available at `http://localhost:8000/docs`.
 
-> _Interactive API documentation (Swagger UI) is available at [http://localhost:8000/docs](http://localhost:8000/docs)_
-
-### 6. Start the Next.js Frontend
-
+### 3. Frontend Setup
 ```bash
 cd apps/web
 npm install
 npm run dev
 ```
-
-> _Access the Web Application at [http://localhost:3000](http://localhost:3000)_
+Open `http://localhost:3000` in your browser.
 
 ---
 
-## 🧪 Running Automated Tests
+## Testing
 
+Run the full test suite (unit tests, workflow tests, and API fuzzing):
 ```bash
-pytest -v tests/unit
+pytest tests
 ```
 
-All unit tests verify:
-
-- Priority event wake classifications and sensitivity modes.
-- Context compaction and sliding memory rollups.
-- Execution and structured outputs of all 5 business tools.
+To run a specific test suite:
+```bash
+pytest tests/unit/test_assignment_compliance.py -v   # Event, tool, and instruction verification
+pytest tests/workflows/test_order_supervisor.py -v     # Temporal workflow tests
+pytest tests/api/test_schemathesis.py -v              # API fuzz testing
+```
 
 ---
 
-## 🎬 CLI Event Simulator
+## Event Simulation CLI
 
-You can inject real-time signals into running workflows either from the **UI Simulator Panel** or using the CLI:
-
+Events can be injected through the web UI or via the CLI script:
 ```bash
-# Interactive CLI signal selector:
+# Interactive mode:
 python scripts/simulate-events.py
 
-# Or target a specific run with an event:
+# Send specific event to an order run:
 python scripts/simulate-events.py --run-id run_demo_1001 --event shipment_delayed
 
-# Inject a dynamic live operator instruction:
-python scripts/simulate-events.py --run-id run_demo_1001 --instruction "Prioritize speed over cost for this client."
+# Inject an operator directive:
+python scripts/simulate-events.py --run-id run_demo_1001 --instruction "Prioritize speed over cost."
 ```
 
 ---
 
-## 📊 REST API Reference
+## API Reference
 
-| Method | Endpoint                          | Description                                     |
-| :----- | :-------------------------------- | :---------------------------------------------- |
-| `GET`  | `/api/supervisors`                | List all supervisor templates                   |
-| `POST` | `/api/supervisors`                | Create a new supervisor configuration           |
-| `GET`  | `/api/runs`                       | List all active and completed runs              |
-| `POST` | `/api/runs`                       | Launch a new Order Supervisor Temporal workflow |
-| `GET`  | `/api/runs/{run_id}`              | Get full run state, memory, and timeline        |
-| `POST` | `/api/runs/{run_id}/events`       | Inject an event signal into the workflow        |
-| `POST` | `/api/runs/{run_id}/instructions` | Inject dynamic live guidance                    |
-| `POST` | `/api/runs/{run_id}/interrupt`    | Pause / sleep a running workflow                |
-| `POST` | `/api/runs/{run_id}/resume`       | Resume a paused workflow                        |
-| `POST` | `/api/runs/{run_id}/terminate`    | Terminate workflow and generate post-mortem     |
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/supervisors` | List supervisor templates |
+| `POST` | `/api/supervisors` | Create a supervisor profile |
+| `GET` | `/api/runs` | List order runs |
+| `POST` | `/api/runs` | Start a new order supervisor workflow |
+| `GET` | `/api/runs/{run_id}` | Get run state, timeline, and memory |
+| `POST` | `/api/runs/{run_id}/events` | Send an event signal to the workflow |
+| `POST` | `/api/runs/{run_id}/instructions` | Send an operator directive signal |
+| `POST` | `/api/runs/{run_id}/interrupt` | Pause workflow execution |
+| `POST` | `/api/runs/{run_id}/resume` | Resume paused workflow |
+| `POST` | `/api/runs/{run_id}/terminate` | Terminate workflow and generate post-mortem |
