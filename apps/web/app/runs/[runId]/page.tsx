@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   Clock,
@@ -25,6 +26,8 @@ import { RunControls } from "@/components/runs/RunControls";
 
 export default function RunDetailPage({ params }: { params: { runId: string } }) {
   const runId = params.runId;
+  const searchParams = useSearchParams();
+  const initialAutoplay = searchParams.get("autoplay") === "true";
 
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(true);
@@ -352,6 +355,7 @@ export default function RunDetailPage({ params }: { params: { runId: string } })
             runId={run.id}
             events={run.events || []}
             status={run.status}
+            initialAutoplay={initialAutoplay}
             onEventSent={loadRun}
           />
 

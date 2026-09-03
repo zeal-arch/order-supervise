@@ -46,7 +46,7 @@ function DashboardContent() {
     return () => clearInterval(interval);
   }, [searchParams]);
 
-  const handleStartRun = async (e: React.FormEvent) => {
+  const handleStartRun = async (e: React.FormEvent, withAutoplay = false) => {
     e.preventDefault();
     const orderId = newOrderId.trim() || `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     setCreating(true);
@@ -55,7 +55,7 @@ function DashboardContent() {
         order_id: orderId,
         supervisor_id: selectedSup || undefined,
       });
-      router.push(`/runs/${newRun.id}`);
+      router.push(`/runs/${newRun.id}${withAutoplay ? "?autoplay=true" : ""}`);
     } catch (e: any) {
       alert(`Error starting run: ${e.message}`);
       setCreating(false);
@@ -85,8 +85,8 @@ function DashboardContent() {
 
         {/* Order Creator with Supervisor Template Selection */}
         <form
-          onSubmit={handleStartRun}
-          className="bg-[#1a1a1a] border border-[#2e2e2e] p-5 rounded-[12px] space-y-3 w-full lg:w-auto min-w-[400px]"
+          onSubmit={(e) => handleStartRun(e, false)}
+          className="bg-[#1a1a1a] border border-[#2e2e2e] p-5 rounded-[12px] space-y-3 w-full lg:w-auto min-w-[420px]"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-white">Launch Supervised Order</span>
@@ -99,7 +99,7 @@ function DashboardContent() {
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <input
               type="text"
               placeholder="Order ID (e.g. ORD-9021)"
@@ -112,28 +112,39 @@ function DashboardContent() {
               <label className="text-[10px] uppercase font-mono text-[#888888] font-bold block">
                 Supervisor Template:
               </label>
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedSup}
-                  onChange={(e) => setSelectedSup(e.target.value)}
-                  className="text-xs px-3 py-2.5 rounded-[8px] bg-[#121212] border border-[#2e2e2e] text-white focus:outline-none focus:border-neutral-400 cursor-pointer flex-1 font-mono"
-                >
-                  {supervisors.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.wake_sensitivity} • {s.model_name || "gpt-4o-mini"})
-                    </option>
-                  ))}
-                </select>
+              <select
+                value={selectedSup}
+                onChange={(e) => setSelectedSup(e.target.value)}
+                className="text-xs px-3 py-2.5 rounded-[8px] bg-[#121212] border border-[#2e2e2e] text-white focus:outline-none focus:border-neutral-400 cursor-pointer w-full font-mono"
+              >
+                {supervisors.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.wake_sensitivity} • {s.model_name || "gpt-4o-mini"})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="px-4 py-2.5 rounded-[8px] bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <span>{creating ? "Launching..." : "Launch"}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            {/* Action Buttons: Standard Launch + Auto-Simulate Button */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex-1 py-2.5 px-3 rounded-[8px] bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>{creating ? "Launching..." : "Launch Order"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                disabled={creating}
+                onClick={(e) => handleStartRun(e, true)}
+                className="flex-1 py-2.5 px-3 rounded-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold hover:bg-amber-500/30 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5"
+                title="Launch order and automatically simulate the complete lifecycle with 30s intervals"
+              >
+                <span>⚡ Auto-Play (30s)</span>
+              </button>
             </div>
           </div>
 

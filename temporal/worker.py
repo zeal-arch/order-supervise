@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from temporalio.client import Client
 from temporalio.worker import Worker
 
 from apps.api.app.config import settings
@@ -11,7 +12,6 @@ from temporal.activities.persistence import (
     persist_run_state_activity,
 )
 from temporal.activities.wake_policy import evaluate_wake_policy_activity
-from temporal.client import get_temporal_client
 
 # Import workflow and activities
 from temporal.workflows.order_supervisor import OrderSupervisorWorkflow
@@ -24,13 +24,33 @@ logging.basicConfig(
 logger = logging.getLogger("temporal.worker")
 
 
+async def connect_with_retry() -> Client:
+    """Connects to Temporal Server with resilient automatic retry if server is offline."""
+    attempt = 1
+    while True:
+        try:
+            logger.info(f"Connecting to Temporal Server at {settings.TEMPORAL_HOST} (attempt #{attempt})...")
+            client = await Client.connect(
+                settings.TEMPORAL_HOST,
+                namespace=settings.TEMPORAL_NAMESPACE,
+            )
+            logger.info("Connected successfully to Temporal Server.")
+            return client
+        except Exception as e:
+            logger.warning(
+                f"Temporal server at {settings.TEMPORAL_HOST} is offline or starting up ({e.__class__.__name__}). "
+                f"Retrying in 3 seconds..."
+            )
+            attempt += 1
+            await asyncio.sleep(3)
+
+
 async def run_worker():
     print("\n" + "=" * 76)
     print("  ORDER SUPERVISOR - TEMPORAL WORKER ENGINE")
     print("=" * 76)
-    logger.info("Connecting to Temporal Server at localhost:7233...")
-    client = await get_temporal_client()
-    logger.info("Connected successfully to Temporal.")
+
+    client = await connect_with_retry()
 
     worker = Worker(
         client,

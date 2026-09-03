@@ -168,11 +168,13 @@ export function EventInjector({
   runId,
   events = [],
   status = "RUNNING",
+  initialAutoplay = false,
   onEventSent,
 }: {
   runId: string;
   events?: DomainEvent[];
   status?: string;
+  initialAutoplay?: boolean;
   onEventSent?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<"all" | "shipping" | "payments" | "customer">("all");
@@ -181,7 +183,7 @@ export function EventInjector({
   const [customMsg, setCustomMsg] = useState("");
 
   // Automated Simulation / Autoplay State
-  const [isAutoplayRunning, setIsAutoplayRunning] = useState(false);
+  const [isAutoplayRunning, setIsAutoplayRunning] = useState(initialAutoplay);
   const [autoplayIntervalSeconds, setAutoplayIntervalSeconds] = useState(30);
   const [secondsRemaining, setSecondsRemaining] = useState(30);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
